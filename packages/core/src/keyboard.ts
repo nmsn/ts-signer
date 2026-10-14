@@ -1,6 +1,6 @@
-export function findButtonByText(
-  buttons: { text: string }[],
+export function findButtonByText<T extends { text: string }>(
+  buttons: T[],
   needle: string,
-): { text: string } | undefined {
+): T | undefined {
   return buttons.find((button) => button.text.includes(needle));
 }

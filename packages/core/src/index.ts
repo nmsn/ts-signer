@@ -17,9 +17,20 @@ export {
 export { needSign, computeNextRun, type SignState } from "./schedule.js";
 export { findButtonByText } from "./keyboard.js";
 export {
+  signOnce,
+  type IncomingButton,
+  type IncomingMessage,
+  type TelegramBridge,
+} from "./signer.js";
+export {
   loadCredentials,
   saveCredentials,
   resolveCredentials,
   type TelegramCredentials,
 } from "./credentials.js";
-export { createTelegramClient, loginAndListDialogs } from "./client.js";
+export {
+  createTelegramBridge,
+  createTelegramClient,
+  loginAndListDialogs,
+  withFloodRetry,
+} from "./client.js";

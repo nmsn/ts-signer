@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import {
   CORE_VERSION,
+  JsonSignRecordStore,
+  createTelegramBridge,
+  createTelegramClient,
   ensureWorkdir,
+  loadConfig,
   loadCredentials,
   loginAndListDialogs,
   resolveCredentials,
   resolveWorkdir,
   saveCredentials,
+  signOnce,
 } from "@ts-signer/core";
 import { cancel, isCancel, password, text } from "@clack/prompts";
 import { defineCommand, runMain } from "citty";
@@ -73,6 +78,29 @@ const login = defineCommand({
   },
 });
 
+const runOnce = defineCommand({
+  meta: {
+    name: "run-once",
+    description: "Run one sign-in round even if it already ran",
+  },
+  async run() {
+    const config = loadConfig(workdir);
+    const client = createTelegramClient(workdir);
+
+    try {
+      await client.start();
+      await signOnce({
+        config,
+        bridge: createTelegramBridge(client),
+        store: new JsonSignRecordStore(workdir),
+        force: true,
+      });
+    } finally {
+      await client.destroy();
+    }
+  },
+});
+
 const main = defineCommand({
   meta: {
     name: "ts-signer",
@@ -90,6 +118,7 @@ const main = defineCommand({
   },
   subCommands: {
     login,
+    "run-once": runOnce,
   },
 });
 
