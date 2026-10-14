@@ -1,0 +1,25 @@
+docs/superpowers/specs/2026-10-14-ts-signer-design.md
+  s_582ea22ad76ffd::t_eb8841d556bfc4 204-205,208-232,237-246,250-255,257,266
+  s_582ea22ad76ffd::t_90e03c9c813416 270
+  s_582ea22ad76ffd::t_51119eaefe809e 73-74,76-100,106-107
+  s_582ea22ad76ffd::t_7b96be536f80c2 279,281-287
+  s_582ea22ad76ffd::t_94b5703fea87f4 295,297
+  s_582ea22ad76ffd::t_0fb291c6986658 23
+  s_582ea22ad76ffd::t_52a82120c84047 316-320,326-327
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "017a9a389343794a67d46f2b4797f3eaa5520487",
+  "prompts": {},
+  "sessions": {
+    "s_582ea22ad76ffd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a8445e9e-1e1b-464f-b51c-beb5b7c5c054",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
