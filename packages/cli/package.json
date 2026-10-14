@@ -9,7 +9,8 @@
     "ts-signer": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clack/prompts": "^1.8.1",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
   }
 }

@@ -16,6 +16,7 @@ import {
 } from "@ts-signer/core";
 import { cancel, isCancel, password, text } from "@clack/prompts";
 import { defineCommand, runMain } from "citty";
+import { runInitWizard } from "./wizard.js";
 
 let workdir = resolveWorkdir();
 
@@ -76,6 +77,16 @@ const login = defineCommand({
 
     const dialogs = await loginAndListDialogs(workdir);
     console.table(dialogs);
+  },
+});
+
+const init = defineCommand({
+  meta: {
+    name: "init",
+    description: "Create an interactive signer configuration",
+  },
+  async run() {
+    await runInitWizard(workdir);
   },
 });
 
@@ -177,6 +188,7 @@ const main = defineCommand({
     workdir = resolveWorkdir(args.workdir);
   },
   subCommands: {
+    init,
     login,
     run,
     "run-once": runOnce,
