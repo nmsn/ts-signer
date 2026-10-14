@@ -17,7 +17,15 @@ export async function runScheduler({
   config,
 }: SchedulerOptions): Promise<void> {
   while (!shouldStop()) {
-    await tick();
+    try {
+      await tick();
+    } catch (error) {
+      console.error("Scheduler tick failed:", error);
+      if (!shouldStop()) {
+        await sleep(30_000);
+      }
+      continue;
+    }
     if (shouldStop()) {
       return;
     }

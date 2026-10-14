@@ -39,11 +39,11 @@ export function parseSignAt(input: string): string {
 const signActionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("send_text"),
-    text: z.string(),
+    text: z.string().min(1),
   }),
   z.object({
     type: z.literal("click_keyboard_by_text"),
-    text: z.string(),
+    text: z.string().min(1),
   }),
 ]);
 
@@ -51,15 +51,15 @@ const signChatSchema = z.object({
   chat_id: z.union([z.number(), z.string()]),
   name: z.string().optional(),
   delete_after: z.number().nullable().default(null),
-  action_interval: z.number().default(1),
+  action_interval: z.number().nonnegative().default(1),
   actions: z.array(signActionSchema).min(1),
 });
 
 export const signerConfigSchema = z.object({
   version: z.literal(1),
   sign_at: z.string().transform((value) => parseSignAt(value)),
-  random_seconds: z.number().default(0),
-  sign_interval: z.number().default(1),
+  random_seconds: z.number().nonnegative().default(0),
+  sign_interval: z.number().nonnegative().default(1),
   chats: z.array(signChatSchema).min(1),
 });
 

@@ -41,4 +41,52 @@ describe("signerConfigSchema", () => {
       }),
     ).toThrow();
   });
+
+  it.each([
+    { type: "send_text", text: "" },
+    { type: "click_keyboard_by_text", text: "" },
+  ])("rejects actions with empty text", (action) => {
+    expect(() =>
+      signerConfigSchema.parse({
+        version: 1,
+        sign_at: "0 6 * * *",
+        chats: [{ chat_id: 1, actions: [action] }],
+      }),
+    ).toThrow();
+  });
+
+  it.each(["random_seconds", "sign_interval"] as const)(
+    "rejects negative %s",
+    (field) => {
+      expect(() =>
+        signerConfigSchema.parse({
+          version: 1,
+          sign_at: "0 6 * * *",
+          chats: [
+            {
+              chat_id: 1,
+              actions: [{ type: "send_text", text: "/checkin" }],
+            },
+          ],
+          [field]: -1,
+        }),
+      ).toThrow();
+    },
+  );
+
+  it("rejects negative action_interval", () => {
+    expect(() =>
+      signerConfigSchema.parse({
+        version: 1,
+        sign_at: "0 6 * * *",
+        chats: [
+          {
+            chat_id: 1,
+            action_interval: -1,
+            actions: [{ type: "send_text", text: "/checkin" }],
+          },
+        ],
+      }),
+    ).toThrow();
+  });
 });

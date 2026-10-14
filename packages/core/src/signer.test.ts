@@ -19,6 +19,12 @@ class FakeBridge implements TelegramBridge {
     data: Uint8Array;
   }> = [];
   incoming: IncomingMessage[] = [];
+  readonly cleared: Array<number | string> = [];
+
+  clearIncoming(chatId: number | string): void {
+    this.cleared.push(chatId);
+    this.incoming = [];
+  }
 
   async sendText(
     chatId: number | string,
@@ -107,7 +113,7 @@ describe("signOnce", () => {
     const bridge = new FakeBridge();
     const store = new FakeStore();
     const callbackData = new Uint8Array([1, 2, 3]);
-    bridge.incoming = [
+    bridge.waitForIncoming = vi.fn().mockResolvedValue([
       {
         messageId: 77,
         buttons: [
@@ -115,7 +121,7 @@ describe("signOnce", () => {
           { text: "每日签到", data: callbackData },
         ],
       },
-    ];
+    ]);
 
     await signOnce({
       config: config([
@@ -174,6 +180,33 @@ describe("signOnce", () => {
     ]);
   });
 
+  it("clears stale callbacks before waiting for a matching button", async () => {
+    const bridge = new FakeBridge();
+    const store = new FakeStore();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    bridge.incoming = [
+      {
+        messageId: 76,
+        buttons: [
+          { text: "签到", data: new Uint8Array([1]) },
+        ],
+      },
+    ];
+
+    await signOnce({
+      config: config([
+        { type: "click_keyboard_by_text", text: "签到" },
+      ]),
+      bridge,
+      store,
+      clickTimeoutMs: 1,
+    });
+
+    expect(bridge.cleared).toEqual(["@signbot"]);
+    expect(bridge.clicked).toEqual([]);
+    warn.mockRestore();
+  });
+
   it("warns on click timeout and still completes the round", async () => {
     const bridge = new FakeBridge();
     const store = new FakeStore();
@@ -210,6 +243,35 @@ describe("signOnce", () => {
 
     expect(error).toHaveBeenCalledOnce();
     expect(store.marked).toEqual([now]);
+    error.mockRestore();
+  });
+
+  it("continues with later actions after one action fails", async () => {
+    const bridge = new FakeBridge();
+    const store = new FakeStore();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    bridge.sendText = vi
+      .fn<TelegramBridge["sendText"]>()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ messageId: 43 });
+
+    await signOnce({
+      config: config([
+        { type: "send_text", text: "/first" },
+        { type: "send_text", text: "/second" },
+      ]),
+      bridge,
+      store,
+    });
+
+    expect(bridge.sendText).toHaveBeenCalledTimes(2);
+    expect(bridge.sendText).toHaveBeenNthCalledWith(
+      2,
+      "@signbot",
+      "/second",
+    );
+    expect(error).toHaveBeenCalledOnce();
+    expect(store.marked).toHaveLength(1);
     error.mockRestore();
   });
 

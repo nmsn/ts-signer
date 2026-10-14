@@ -21,5 +21,8 @@ export function workdirPaths(workdir: string) {
 
 export function ensureWorkdir(workdir: string): void {
   const p = workdirPaths(workdir);
-  fs.mkdirSync(p.sessionDir, { recursive: true });
+  fs.mkdirSync(p.sessionDir, { recursive: true, mode: 0o700 });
+  if (process.platform !== "win32") {
+    fs.chmodSync(p.sessionDir, 0o700);
+  }
 }

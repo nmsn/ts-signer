@@ -21,7 +21,7 @@ Design and scope: [`docs/superpowers/specs/2026-10-14-ts-signer-design.md`](docs
 
 ## Work directory
 
-**Product default (personal use):** `~/.ts-signer/`  
+**Product default (personal use):** `~/.ts-signer/`
 Override anytime: `ts-signer --workdir <path> …`
 
 **Development (this repo):** keep generated data under **`./.dev-signer/`** so nothing lands in your home directory by accident. Root scripts pass `--workdir ./.dev-signer` automatically.

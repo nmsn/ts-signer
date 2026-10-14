@@ -41,4 +41,34 @@ describe("runScheduler", () => {
       sleep.mock.invocationCallOrder[0],
     );
   });
+
+  it("logs a tick failure, waits briefly, and continues", async () => {
+    const now = new Date(2026, 9, 14, 5, 0, 0);
+    let stopped = false;
+    const failure = new Error("temporary failure");
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const tick = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(undefined);
+    const sleep = vi.fn(async (ms: number) => {
+      if (ms !== 30_000) {
+        stopped = true;
+      }
+    });
+
+    await runScheduler({
+      config,
+      getNow: () => now,
+      shouldStop: () => stopped,
+      sleep,
+      tick,
+    });
+
+    expect(tick).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenNthCalledWith(1, 30_000);
+    expect(sleep).toHaveBeenNthCalledWith(2, 60 * 60 * 1000);
+    expect(error).toHaveBeenCalledWith("Scheduler tick failed:", failure);
+    error.mockRestore();
+  });
 });

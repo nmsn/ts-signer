@@ -8,6 +8,9 @@ dist/
 # Dev / local Telegram workdirs (sessions & credentials — never commit)
 .dev-signer/
 .ts-signer/
+**/session/
+**/*.session
+telegram.session
 
 # Env and secrets
 .env

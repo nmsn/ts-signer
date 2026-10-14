@@ -112,6 +112,9 @@ export function createTelegramBridge(client: TelegramClient): TelegramBridge {
     deleteMessages(chatId, ids) {
       return withFloodRetry(() => client.deleteMessagesById(chatId, ids));
     },
+    clearIncoming(chatId) {
+      drain(normalizeChatKey(chatId));
+    },
     async waitForIncoming(chatId, timeoutMs) {
       const key = normalizeChatKey(chatId);
       const buffered = drain(key);

@@ -122,4 +122,45 @@ describe("createTelegramBridge", () => {
     await expect(bridge.waitForIncoming(10, 0)).resolves.toEqual([]);
     await expect(bridge.waitForIncoming("signbot", 0)).resolves.toEqual([]);
   });
+
+  it("clears buffered callbacks for every alias before a wait window", async () => {
+    let listener: ((message: Message) => void) | undefined;
+    const client = {
+      onNewMessage: {
+        add(next: (message: Message) => void) {
+          listener = next;
+        },
+      },
+    } as unknown as TelegramClient;
+    const bridge = createTelegramBridge(client);
+
+    listener?.({
+      id: 12,
+      isOutgoing: false,
+      chat: { id: 10, username: "signbot" },
+      markup: {
+        type: "inline",
+        buttons: [
+          [
+            {
+              _: "keyboardInlineButton",
+              text: "签到",
+              type: {
+                _: "inlineButtonTypeCallback",
+                data: new Uint8Array([1]),
+              },
+            },
+          ],
+        ],
+      },
+    } as Message);
+
+    bridge.clearIncoming("@signbot");
+
+    await expect(bridge.waitForIncoming("@signbot", 0)).resolves.toEqual(
+      [],
+    );
+    await expect(bridge.waitForIncoming(10, 0)).resolves.toEqual([]);
+    await expect(bridge.waitForIncoming("signbot", 0)).resolves.toEqual([]);
+  });
 });
