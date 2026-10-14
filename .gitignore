@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Dev / local Telegram workdirs (sessions & credentials — never commit)
+.dev-signer/
+.ts-signer/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+credentials.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
