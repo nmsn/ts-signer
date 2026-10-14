@@ -1,0 +1,19 @@
+package.json
+  s_e7aa517cc7266c::t_40727251ea75dc 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "655de89efc71dec8bb974fa709096ff5fc18f984",
+  "prompts": {},
+  "sessions": {
+    "s_e7aa517cc7266c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1aae2ffb-2ab2-4e13-b1da-dde248bd3c02",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
