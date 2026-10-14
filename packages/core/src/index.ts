@@ -16,3 +16,10 @@ export {
 } from "./store.js";
 export { needSign, computeNextRun, type SignState } from "./schedule.js";
 export { findButtonByText } from "./keyboard.js";
+export {
+  loadCredentials,
+  saveCredentials,
+  resolveCredentials,
+  type TelegramCredentials,
+} from "./credentials.js";
+export { createTelegramClient, loginAndListDialogs } from "./client.js";

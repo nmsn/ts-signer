@@ -2,7 +2,9 @@
   "name": "@ts-signer/cli",
   "version": "0.1.0",
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "bin": {
     "ts-signer": "./dist/cli.js"
   },
@@ -10,7 +12,9 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@ts-signer/core": "workspace:*"
+    "@clack/prompts": "^1.8.1",
+    "@ts-signer/core": "workspace:*",
+    "citty": "^0.2.2"
   },
   "devDependencies": {
     "typescript": "^5.8.0"
