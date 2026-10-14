@@ -1,0 +1,29 @@
+packages/core/src/index.ts
+  s_10889e9beb0009::t_37574c5885758c 18
+packages/core/src/scheduler.test.ts
+  s_10889e9beb0009::t_b5443961bac7f2 1-44
+packages/cli/src/cli.ts
+  s_10889e9beb0009::t_e2f6e7ced10144 13,105-163,181
+packages/core/src/scheduler.ts
+  s_10889e9beb0009::t_86df00b642864e 1-33
+packages/cli/package.json
+  s_10889e9beb0009::t_46d9ab8632a4d2 20
+pnpm-lock.yaml
+  s_10889e9beb0009::t_50add6ead76c8d 23-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a8db11920ce531acd2eec96dce3792c5c322b656",
+  "prompts": {},
+  "sessions": {
+    "s_10889e9beb0009": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3f1d2cc1-4614-440f-9ede-e925c16fdbc1",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
