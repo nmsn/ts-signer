@@ -1,0 +1,29 @@
+packages/core/src/schedule.ts
+  s_2c63783c802c67::t_b3a13602cdb5ba 1-57
+packages/core/src/index.ts
+  s_2c63783c802c67::t_1f02670bca51a4 13-16
+  s_2c63783c802c67::t_ff1dc0cf650833 17
+packages/core/src/schedule.test.ts
+  s_2c63783c802c67::t_678709d3710bbf 1-72
+packages/core/src/store.test.ts
+  s_2c63783c802c67::t_cedf3266b3864b 1-34
+packages/core/src/store.ts
+  s_2c63783c802c67::t_b7001982c2b7c3 2,46
+  s_2c63783c802c67::t_5ab492c5d95859 1,3-45,47-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d894f0e5bf39ca54566eb8a39171f8b42635248a",
+  "prompts": {},
+  "sessions": {
+    "s_2c63783c802c67": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c19080e3-6d1c-4b75-9b53-a16583773198",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
