@@ -81,9 +81,12 @@ export function createTelegramBridge(client: TelegramClient): TelegramBridge {
     if (incoming.buttons.length === 0) {
       return;
     }
-    for (const key of chatKeys(message)) {
-      const messages = buffers.get(key) ?? [];
-      messages.push(incoming);
+    const keys = chatKeys(message);
+    const messages =
+      keys.map((key) => buffers.get(key)).find((buffer) => buffer !== undefined) ??
+      [];
+    messages.push(incoming);
+    for (const key of keys) {
       buffers.set(key, messages);
       waiters.get(key)?.();
     }
@@ -91,7 +94,11 @@ export function createTelegramBridge(client: TelegramClient): TelegramBridge {
 
   const drain = (key: string): IncomingMessage[] => {
     const messages = buffers.get(key) ?? [];
-    buffers.delete(key);
+    for (const [alias, buffer] of buffers) {
+      if (buffer === messages) {
+        buffers.delete(alias);
+      }
+    }
     return messages;
   };
 

@@ -135,6 +135,45 @@ describe("signOnce", () => {
     ]);
   });
 
+  it("keeps waiting after an unrelated keyboard and clicks a later match", async () => {
+    const bridge = new FakeBridge();
+    const store = new FakeStore();
+    const callbackData = new Uint8Array([4, 5, 6]);
+    const waitForIncoming = vi
+      .fn<TelegramBridge["waitForIncoming"]>()
+      .mockResolvedValueOnce([
+        {
+          messageId: 76,
+          buttons: [{ text: "Help", data: new Uint8Array([0]) }],
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          messageId: 77,
+          buttons: [{ text: "每日签到", data: callbackData }],
+        },
+      ]);
+    bridge.waitForIncoming = waitForIncoming;
+
+    await signOnce({
+      config: config([
+        { type: "click_keyboard_by_text", text: "签到" },
+      ]),
+      bridge,
+      store,
+      clickTimeoutMs: 25,
+    });
+
+    expect(waitForIncoming).toHaveBeenCalledTimes(2);
+    expect(bridge.clicked).toEqual([
+      {
+        chatId: "@signbot",
+        messageId: 77,
+        data: callbackData,
+      },
+    ]);
+  });
+
   it("warns on click timeout and still completes the round", async () => {
     const bridge = new FakeBridge();
     const store = new FakeStore();
@@ -153,6 +192,25 @@ describe("signOnce", () => {
     expect(warn).toHaveBeenCalledOnce();
     expect(store.marked).toHaveLength(1);
     warn.mockRestore();
+  });
+
+  it("marks the round signed after a chat throws", async () => {
+    const bridge = new FakeBridge();
+    const store = new FakeStore();
+    const now = new Date("2026-10-14T06:03:12.000Z");
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    bridge.sendText = vi.fn().mockRejectedValue(new Error("offline"));
+
+    await signOnce({
+      config: config([{ type: "send_text", text: "/sign" }]),
+      bridge,
+      store,
+      now,
+    });
+
+    expect(error).toHaveBeenCalledOnce();
+    expect(store.marked).toEqual([now]);
+    error.mockRestore();
   });
 
   it("returns without actions or marking when the round is not due", async () => {

@@ -63,18 +63,35 @@ export async function signOnce({
             await bridge.deleteMessages(chat.chat_id, [sent.messageId]);
           }
         } else {
-          const messages = await bridge.waitForIncoming(
-            chat.chat_id,
-            clickTimeoutMs,
-          );
-          const match = messages
-            .map((message) => ({
-              message,
-              button: findButtonByText(message.buttons, action.text),
-            }))
-            .find(({ button }) => button !== undefined);
+          const deadline = Date.now() + clickTimeoutMs;
+          let match:
+            | {
+                message: IncomingMessage;
+                button: IncomingButton;
+              }
+            | undefined;
 
-          if (match?.button) {
+          do {
+            const messages = await bridge.waitForIncoming(
+              chat.chat_id,
+              Math.max(0, deadline - Date.now()),
+            );
+            match = messages
+              .map((message) => ({
+                message,
+                button: findButtonByText(message.buttons, action.text),
+              }))
+              .find(
+                (
+                  candidate,
+                ): candidate is {
+                  message: IncomingMessage;
+                  button: IncomingButton;
+                } => candidate.button !== undefined,
+              );
+          } while (!match && Date.now() < deadline);
+
+          if (match) {
             await bridge.clickCallback(
               chat.chat_id,
               match.message.messageId,
