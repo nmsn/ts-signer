@@ -1,0 +1,51 @@
+packages/core/package.json
+  s_05bb7a79cbb525::t_2bffc8232bf612 1-22
+packages/cli/package.json
+  s_05bb7a79cbb525::t_7000aa701a8dda 1-18
+packages/core/src/index.ts
+  s_05bb7a79cbb525::t_0ae9d7106b90b2 1
+pnpm-workspace.yaml
+  s_05bb7a79cbb525::t_1d1c0a4050b084 1-2
+packages/core/tsconfig.json
+  s_05bb7a79cbb525::t_c7fc805c00ef8c 1-2,7-9
+  s_05bb7a79cbb525::t_bab7c75b361edf 4-5
+  s_05bb7a79cbb525::t_df5a790d939e74 3,6
+packages/cli/src/cli.ts
+  s_05bb7a79cbb525::t_6f8e6e82d8ac0f 1-4
+packages/cli/tsconfig.json
+  s_05bb7a79cbb525::t_f5788bfdbd678e 1-2,7-9
+  s_05bb7a79cbb525::t_adc0b9c297fddf 3,6
+  s_05bb7a79cbb525::t_22d9f1ea7b7436 4-5
+packages/electron/README.md
+  s_05bb7a79cbb525::t_181328e6e6fe6f 1-6
+packages/electron/package.json
+  s_05bb7a79cbb525::t_5f567d5ce0cc22 1-7
+tsconfig.base.json
+  s_05bb7a79cbb525::t_2d4b9a3f588676 1-14
+package.json
+  s_05bb7a79cbb525::t_0bc8c1a5a054e5 1-17
+packages/core/src/index.d.ts
+  s_05bb7a79cbb525::t_55863d539865d1 1
+packages/core/src/index.js
+  s_05bb7a79cbb525::t_d61ff4ead74f5a 1-2
+packages/core/src/index.js.map
+  s_05bb7a79cbb525::t_108b1fd9f8cb23 1
+pnpm-lock.yaml
+  s_05bb7a79cbb525::t_834a2fae2d9efc 1-1031
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "00d4016da653e5d147d0c196a2e7176561e5e8cc",
+  "prompts": {},
+  "sessions": {
+    "s_05bb7a79cbb525": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6c2e38f1-e35a-4d13-8e1c-f9812a49692b",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
