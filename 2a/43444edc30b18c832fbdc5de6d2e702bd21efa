@@ -1,0 +1,38 @@
+packages/core/src/signer.test.ts
+  s_5a3596117d41b5::t_08f983af46f93b 1-177
+packages/core/src/client.ts
+  s_5a3596117d41b5::t_603d4e4f59161f 63-66
+  s_5a3596117d41b5::t_93682abc33726e 2,23
+  s_5a3596117d41b5::t_1bfe3de77eb005 5-22,24-32,45-62,68-76,80,84-138
+  s_5a3596117d41b5::t_a8c70ad98a394e 67
+  s_5a3596117d41b5::t_6eea148105dc78 77-79,81-83
+  s_5a3596117d41b5::t_4553e4cc1be636 139
+packages/core/src/index.ts
+  s_5a3596117d41b5::t_850623838b1a11 19-24,31-36
+packages/core/src/signer.ts
+  s_5a3596117d41b5::t_b5938437b50792 1-104
+packages/core/src/client.test.ts
+  s_5a3596117d41b5::t_63ef099d8bb9c0 1,3-6,43-81
+  s_5a3596117d41b5::t_a466996bf9c928 2,7,11-42,82-83
+  s_5a3596117d41b5::t_cb2027b5324c4f 8-10
+packages/core/src/keyboard.ts
+  s_5a3596117d41b5::t_0b6ad23fbeb11a 1-2,4
+packages/cli/src/cli.ts
+  s_5a3596117d41b5::t_b5154ddccecea9 4-6,8,14,81-103,121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a43444edc30b18c832fbdc5de6d2e702bd21efa",
+  "prompts": {},
+  "sessions": {
+    "s_5a3596117d41b5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9c5b7424-7b82-46df-bdcb-55cab2210489",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
