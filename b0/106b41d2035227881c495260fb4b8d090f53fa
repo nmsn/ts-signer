@@ -1,0 +1,24 @@
+package.json
+  s_340ceeb9448f35::t_f44adbe46e023c 12-15
+packages/core/src/credentials.ts
+  s_340ceeb9448f35::t_ca3b7a484a5fd0 34
+packages/core/src/credentials.test.ts
+  s_340ceeb9448f35::t_20c387ec628001 5-9
+  s_340ceeb9448f35::t_ef2dcd7e1ac983 41-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b0106b41d2035227881c495260fb4b8d090f53fa",
+  "prompts": {},
+  "sessions": {
+    "s_340ceeb9448f35": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c23c72a9-8e32-4a0e-b9a0-70a9d44b02bf",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
