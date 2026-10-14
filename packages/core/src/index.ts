@@ -15,6 +15,7 @@ export {
   type SignRecordStore,
 } from "./store.js";
 export { needSign, computeNextRun, type SignState } from "./schedule.js";
+export { runScheduler, type SchedulerOptions } from "./scheduler.js";
 export { findButtonByText } from "./keyboard.js";
 export {
   signOnce,

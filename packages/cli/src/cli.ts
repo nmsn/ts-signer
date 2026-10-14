@@ -10,6 +10,7 @@ import {
   loginAndListDialogs,
   resolveCredentials,
   resolveWorkdir,
+  runScheduler,
   saveCredentials,
   signOnce,
 } from "@ts-signer/core";
@@ -101,6 +102,65 @@ const runOnce = defineCommand({
   },
 });
 
+const run = defineCommand({
+  meta: {
+    name: "run",
+    description: "Run sign-in rounds on the configured schedule",
+  },
+  async run() {
+    const config = loadConfig(workdir);
+    const client = createTelegramClient(workdir);
+    const bridge = createTelegramBridge(client);
+    const store = new JsonSignRecordStore(workdir);
+    let stopped = false;
+    let wakeSleep: (() => void) | undefined;
+
+    const stop = () => {
+      stopped = true;
+      wakeSleep?.();
+    };
+    const sleep = (ms: number): Promise<void> =>
+      new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          clearTimeout(timer);
+          if (wakeSleep === finish) {
+            wakeSleep = undefined;
+          }
+          resolve();
+        };
+        const timer = setTimeout(finish, ms);
+        wakeSleep = finish;
+        if (stopped) {
+          finish();
+        }
+      });
+
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+
+    try {
+      await client.start();
+      await runScheduler({
+        config,
+        shouldStop: () => stopped,
+        sleep,
+        tick: async () => {
+          await signOnce({ config, bridge, store, force: false });
+        },
+      });
+    } finally {
+      process.removeListener("SIGINT", stop);
+      process.removeListener("SIGTERM", stop);
+      await client.destroy();
+    }
+  },
+});
+
 const main = defineCommand({
   meta: {
     name: "ts-signer",
@@ -118,6 +178,7 @@ const main = defineCommand({
   },
   subCommands: {
     login,
+    run,
     "run-once": runOnce,
   },
 });
