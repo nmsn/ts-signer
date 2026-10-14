@@ -15,3 +15,4 @@ export {
   type SignRecordStore,
 } from "./store.js";
 export { needSign, computeNextRun, type SignState } from "./schedule.js";
+export { findButtonByText } from "./keyboard.js";
