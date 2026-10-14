@@ -20,7 +20,7 @@
 | 账号 | 单账号 |
 | 代理 | 不内置，依赖系统/VPN |
 | Telegram 库 | MTCute（`@mtcute/node`） |
-| 架构风格 | 精简单体 CLI（方案 1） |
+| 架构风格 | 精简能力（方案 1）+ **pnpm monorepo** 分包 |
 | 选签到目标 | 手填 `chat_id`；`login` 打印最近对话供对照；不做自动探测、不做点选菜单 |
 | Node | **24+** |
 
@@ -70,26 +70,41 @@
 
 ## 3. 整体架构
 
-```
-ts-signer (CLI)
-├── login          → MTCute 登录，session 落到 workdir
-├── init           → 交互向导，写出 config.json
-├── run            → 常驻：到点执行签到循环
-└── run-once       → 立即跑一轮（调试用）
+仓库为 **pnpm monorepo**：核心逻辑与入口应用分包，CLI 与日后 Electron 都依赖同一套 core。
 
-运行时：
-  TelegramClient (@mtcute/node)
-       ↓
-  SignerEngine
-       ├── Scheduler（cron + random_seconds）
-       ├── ActionRunner（send_text / click_keyboard_by_text）
-       └── SignRecordStore（state.json）
+```
+packages/core          # 签到引擎、配置、存储抽象、MTCute 封装
+packages/cli           # 命令行入口（v1 实现）
+packages/electron      # 桌面壳（目录先建好，v1 不实现业务）
+
+依赖关系：
+  cli ──────────┐
+                ├──► @ts-signer/core
+  electron ─────┘（后续）
+```
+
+CLI 命令面（`packages/cli`）：
+
+```
+login | init | run | run-once
+```
+
+Core 运行时（`packages/core`）：
+
+```
+TelegramClient (@mtcute/node)
+     ↓
+SignerEngine
+     ├── Scheduler（cron + random_seconds）
+     ├── ActionRunner（send_text / click_keyboard_by_text）
+     └── SignRecordStore（v1: state.json；接口可换 SQLite）
 ```
 
 原则：
 
 - 单账号、单 `config.json`（不做多 task 目录）
-- 配置是业务唯一真相；向导只负责生成/改写
+- 配置是业务唯一真相；向导（CLI）只负责生成/改写
+- 业务逻辑不进 `cli` / `electron`，只进 `core`
 - 与官方 App 可同时在线（多 session）
 
 ## 4. 配置模型与动作语义
@@ -186,35 +201,60 @@ ts-signer (CLI)
 
 ## 6. 仓库结构与技术栈
 
+### 6.1 Monorepo 目录（脚手架即按此创建）
+
 ```
 ts-signer/
-├── package.json          # engines.node: >=24
-├── tsconfig.json
-├── src/
-│   ├── cli.ts
-│   ├── config.ts
-│   ├── wizard.ts
-│   ├── client.ts
-│   ├── signer.ts
-│   ├── scheduler.ts
-│   ├── store.ts
-│   └── paths.ts
-├── .dev-signer/          # 开发 workdir（gitignore）
+├── package.json                 # private workspace root；engines.node: >=24
+├── pnpm-workspace.yaml          # packages/*
+├── tsconfig.base.json
+├── packages/
+│   ├── core/                    # @ts-signer/core
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── src/
+│   │       ├── index.ts         # 对外导出
+│   │       ├── config.ts
+│   │       ├── client.ts
+│   │       ├── signer.ts
+│   │       ├── scheduler.ts
+│   │       ├── store.ts         # Store 接口 + JsonSignRecordStore
+│   │       └── paths.ts
+│   ├── cli/                     # @ts-signer/cli（bin: ts-signer）
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── src/
+│   │       ├── cli.ts
+│   │       └── wizard.ts        # 交互向导属 CLI 层
+│   └── electron/                # @ts-signer/electron
+│       ├── package.json         # v1：占位包（README 标明未实现）
+│       └── README.md            # 指向设计文档 §10
+├── .dev-signer/                 # 开发 workdir（gitignore）
 ├── docs/superpowers/specs/
 └── README.md
 ```
 
+包职责：
+
+| 包 | 职责 | v1 |
+|----|------|----|
+| `@ts-signer/core` | MTCute、配置 schema、调度、动作执行、存储抽象 | **实现** |
+| `@ts-signer/cli` | 参数解析、向导、调用 core | **实现** |
+| `@ts-signer/electron` | Electron 窗口与 GUI | **仅建目录/占位，不实现** |
+
+### 6.2 技术选型
+
 | 用途 | 选型 |
 |------|------|
 | 运行时 | Node.js **24+** + TypeScript |
-| Telegram | `@mtcute/node` |
-| CLI | `citty` 或 `commander`（实现时选轻量者） |
-| 校验 | `zod` |
-| 调度 | `croner` |
-| 交互 | `@clack/prompts` 或 `prompts` |
-| 包管理 | `pnpm` |
+| Workspace | **pnpm** monorepo（`pnpm-workspace.yaml`） |
+| Telegram | `@mtcute/node`（依赖放在 `core`） |
+| CLI | `citty` 或 `commander`（实现时选轻量者，放在 `cli`） |
+| 校验 | `zod`（`core`） |
+| 调度 | `croner`（`core`） |
+| 交互 | `@clack/prompts` 或 `prompts`（`cli`） |
 
-### 命令
+### 6.3 命令
 
 | 命令 | 作用 |
 |------|------|
@@ -223,11 +263,11 @@ ts-signer/
 | `ts-signer run` | 常驻调度签到 |
 | `ts-signer run-once` | 立刻跑一轮 |
 
-全局选项：`--workdir <path>`。
+全局选项：`--workdir <path>`。开发期通过 workspace script 默认 `--workdir ./.dev-signer`。
 
 ## 7. 测试策略（v1）
 
-- 单测：config Zod 校验、是否需要签到的日期/cron 逻辑、按钮文案匹配（纯函数）
+- 单测放在 `packages/core`：config Zod 校验、是否需要签到的日期/cron 逻辑、按钮文案匹配（纯函数）
 - 不做真实 Telegram E2E；自用靠手工 `login` + `run-once` 验证
 
 ## 8. 风险与合规（实现时需在 README 说明）
@@ -236,15 +276,15 @@ ts-signer/
 - 与官方 App 可同时登录，但是同一账号；脚本滥用会影响该账号
 - Session 与 API 凭据按密钥保管，永不提交
 
-## 9. v1 实现顺序（供 plan 拆分；不含 §10）
+## 9. v1 实现顺序（供 plan 拆分；不含 §10 业务）
 
-1. 脚手架：Node 24、pnpm、TS、gitignore、paths（dev 默认 `.dev-signer`）
-2. config Zod + store + 纯函数单测
-3. MTCute client + `login`
-4. wizard `init`
-5. ActionRunner + `run-once`
-6. Scheduler + `run`
-7. README（含开发 workdir 与清理提醒）
+1. Monorepo 脚手架：Node 24、pnpm workspace、`packages/{core,cli,electron}` 占位、gitignore、paths（dev 默认 `.dev-signer`）
+2. `core`：config Zod + Store 接口 + JSON 实现 + 纯函数单测
+3. `core`：MTCute client；`cli`：`login`
+4. `cli`：wizard `init`
+5. `core`：ActionRunner；`cli`：`run-once`
+6. `core`：Scheduler；`cli`：`run`
+7. 根 README（monorepo 说明、开发 workdir、清理提醒、electron 占位说明）
 
 ## 10. 后续计划（不在 v1 实现）
 
@@ -252,8 +292,9 @@ ts-signer/
 
 ### 10.1 Electron 桌面客户端
 
+- 包路径已预留：`packages/electron`（`@ts-signer/electron`）
 - 用 Electron 提供图形界面（登录引导、任务配置、运行状态、历史查看）
-- 建议架构（待后续定稿）：**共享核心库**（MTCute 签到引擎）+ Electron shell；CLI 与桌面端共用同一套 signer，避免两套逻辑
+- **必须**依赖 `@ts-signer/core`，不得复制签到逻辑
 - UI 技术栈（React/Vue 等）留给后续专项设计再定
 
 ### 10.2 签到回复回读与积分展示
@@ -272,16 +313,16 @@ ts-signer/
 
 ### 10.4 建议落地顺序（仅规划，不实施）
 
-1. v1 CLI 内核稳定（本文件 §1–§9）
-2. 引擎侧：回复捕获 + 积分解析 + 写入存储抽象（可先仍落文件，接口预留）
-3. SQLite schema 与查询 / 迁移（从 `state.json` 如有需要）
-4. Electron 壳：展示运行状态、积分与历史
-5. 打磨配置向导（GUI）与打包分发
+1. v1：`core` + `cli` 稳定；`electron` 保持占位（本文件 §1–§9）
+2. `core`：回复捕获 + 积分解析 + 存储抽象扩展（可先仍落文件）
+3. `core`：SQLite schema 与查询 / 迁移（从 `state.json` 如有需要）
+4. `electron`：壳 + 展示运行状态、积分与历史
+5. 打磨 GUI 向导与打包分发
 
 ### 10.5 对 v1 的约束（避免推倒重来）
 
 实现 v1 时注意：
 
-- 签到引擎与 CLI 入口**分层**（`signer` 可被日后 Electron 主进程直接调用）
-- `SignRecordStore` 以接口形式存在，v1 用 JSON 实现；日后可换 SQLite 实现而不改 ActionRunner
+- **Monorepo 分包从第一天就建好**（含 `electron` 空包），禁止把业务写进 `cli` 导致日后无法复用
+- `SignRecordStore` 以接口形式存在于 `core`，v1 用 JSON 实现；日后可换 SQLite 而不改 ActionRunner
 - 收消息路径（点按钮已在用）保持可扩展，便于挂「回复解析」钩子
