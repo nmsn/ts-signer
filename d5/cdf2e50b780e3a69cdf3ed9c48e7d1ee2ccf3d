@@ -1,0 +1,19 @@
+README.md
+  s_1cba807dfcf151::t_5ded7510f01956 1-106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d5cdf2e50b780e3a69cdf3ed9c48e7d1ee2ccf3d",
+  "prompts": {},
+  "sessions": {
+    "s_1cba807dfcf151": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6917df69-fe8a-4ffb-be0c-5055680e8a90",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
