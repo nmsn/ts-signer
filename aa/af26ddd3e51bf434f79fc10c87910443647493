@@ -1,0 +1,31 @@
+packages/core/src/config.ts
+  s_8076176f7caf12::t_bb26df225c2486 1-81
+packages/core/src/config.test.ts
+  s_8076176f7caf12::t_61a953443082f7 1-44
+packages/core/src/index.ts
+  s_8076176f7caf12::t_015738cc13cf36 2-12
+packages/core/src/paths.test.ts
+  s_8076176f7caf12::t_09b343341ba1ca 1-24
+packages/core/src/paths.ts
+  s_8076176f7caf12::t_3d6e45712d0d29 1-25
+packages/core/package.json
+  s_8076176f7caf12::t_b2705561042529 5-7,21,24-27
+pnpm-lock.yaml
+  s_8076176f7caf12::t_7cbd6622e7d3b1 22-28,30-32,38,357-359,405-408,534-536,615-617,787-790,799,805,847-848,986-988,994,1009,1018,1021,1025,1043-1044,1046-1047,1066-1067
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aaaf26ddd3e51bf434f79fc10c87910443647493",
+  "prompts": {},
+  "sessions": {
+    "s_8076176f7caf12": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3f10aa9f-3649-44a9-85ea-303002a36035",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
