@@ -1,0 +1,23 @@
+packages/core/src/keyboard.test.ts
+  s_8b1d446559bf34::t_59d467619784d5 1-26
+packages/core/src/keyboard.ts
+  s_8b1d446559bf34::t_3d439817a230a3 1-6
+packages/core/src/index.ts
+  s_8b1d446559bf34::t_6bcfc89740dfe8 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cdf750f34c82e4894dc966caaccb469a64888733",
+  "prompts": {},
+  "sessions": {
+    "s_8b1d446559bf34": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "56d3ded9-3042-4faf-bc0b-774f9953b334",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
