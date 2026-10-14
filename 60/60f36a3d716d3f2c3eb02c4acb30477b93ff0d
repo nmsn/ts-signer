@@ -1,0 +1,28 @@
+task-6-report.md
+  s_6566b23160df67::t_34a21e8610bbad 1-33
+packages/core/src/signer.test.ts
+  s_6566b23160df67::t_615ccdd3253009 138-176,197-214
+  s_6566b23160df67::t_61749c3dc7b8b2 215
+packages/core/src/client.test.ts
+  s_6566b23160df67::t_b9ad1c9283801f 83-124
+packages/core/src/client.ts
+  s_6566b23160df67::t_ec957b79769987 84-89,97-101
+packages/core/src/signer.ts
+  s_6566b23160df67::t_efca6c710a3aae 66-72,74-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6060f36a3d716d3f2c3eb02c4acb30477b93ff0d",
+  "prompts": {},
+  "sessions": {
+    "s_6566b23160df67": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f2730e10-9bba-4cdb-baf2-24af7e9035d7",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
