@@ -31,6 +31,7 @@ export function saveCredentials(
     `${JSON.stringify(parsed, null, 2)}\n`,
     { encoding: "utf8", mode: 0o600 },
   );
+  fs.chmodSync(paths.credentials, 0o600);
 }
 
 function resolveCredentialsSync(workdir: string): TelegramCredentials {

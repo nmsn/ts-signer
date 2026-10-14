@@ -9,9 +9,9 @@
     "build": "pnpm -r --if-present run build",
     "test": "pnpm --filter @ts-signer/core test",
     "ts-signer": "pnpm --filter @ts-signer/cli exec node ./dist/cli.js --workdir ./.dev-signer",
-    "login": "pnpm ts-signer login",
-    "init": "pnpm ts-signer init",
-    "run": "pnpm ts-signer run",
-    "run-once": "pnpm ts-signer run-once"
+    "signer:login": "pnpm ts-signer login",
+    "signer:init": "pnpm ts-signer init",
+    "signer:run": "pnpm ts-signer run",
+    "signer:run-once": "pnpm ts-signer run-once"
   }
 }
