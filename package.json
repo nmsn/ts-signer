@@ -6,7 +6,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "pnpm -r --if-present run build",
     "test": "pnpm --filter @ts-signer/core test",
     "ts-signer": "pnpm --filter @ts-signer/cli exec ts-signer --workdir ./.dev-signer",
     "login": "pnpm ts-signer login",
