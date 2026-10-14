@@ -1,0 +1,17 @@
+{
+  "name": "ts-signer",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm --filter @ts-signer/core test",
+    "ts-signer": "pnpm --filter @ts-signer/cli exec ts-signer --workdir ./.dev-signer",
+    "login": "pnpm ts-signer login",
+    "init": "pnpm ts-signer init",
+    "run": "pnpm ts-signer run",
+    "run-once": "pnpm ts-signer run-once"
+  }
+}

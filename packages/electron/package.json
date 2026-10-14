@@ -1,0 +1,7 @@
+{
+  "name": "@ts-signer/electron",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Placeholder — Electron UI is post-v1 (see docs/superpowers/specs §10)",
+  "engines": { "node": ">=24" }
+}
