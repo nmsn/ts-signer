@@ -1,0 +1,30 @@
+packages/cli/src/cli.ts
+  s_1eb800a8cd73c8::t_49bc2bf073ffbf 19,83-92,191
+packages/cli/package.json
+  s_1eb800a8cd73c8::t_95d866d11cda27 12-13,22-23
+packages/cli/src/wizard.test.ts
+  s_1eb800a8cd73c8::t_8f6024df46cee2 1-93
+package.json
+  s_1eb800a8cd73c8::t_8a675a8096e7df 10
+packages/cli/src/wizard.ts
+  s_1eb800a8cd73c8::t_6173013b15ec03 22,27
+  s_1eb800a8cd73c8::t_7f5d06af455e6a 1-21,23-26,28-200
+pnpm-lock.yaml
+  s_1eb800a8cd73c8::t_3bf7f9cb40229f 29-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "415e73fdd0718296ab8c82b83cdef5798c405c85",
+  "prompts": {},
+  "sessions": {
+    "s_1eb800a8cd73c8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1f499483-6b94-433e-b613-e3d551629b2f",
+        "model": "auto-smart"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
