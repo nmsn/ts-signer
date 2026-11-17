@@ -54,9 +54,11 @@ From the repo root (uses `./.dev-signer`):
 | Script | CLI command | Purpose |
 |--------|-------------|---------|
 | `pnpm signer:login` | `login` | Sign in; print recent dialogs (ids/names) for manual `chat_id` |
-| `pnpm signer:init` | `init` | Interactive wizard to create/overwrite `config.json` |
-| `pnpm signer:run-once` | `run-once` | Run one sign round now (updates state) |
+| `pnpm signer:init` | `init` | Interactive wizard to create/overwrite `config.json`; choose recent chats, paste IDs in bulk, or enter them one at a time |
+| `pnpm signer:run-once` | `run-once` | Run one sign round now; failed actions are reported and the round is not recorded as signed |
 | `pnpm signer:run` | `run` | Long-running cron scheduler |
+
+The initial CLI flow is `login` → `init` → `run-once` → `run`. In `init`, you can select multiple chats from the 50 most recent dialogs, paste multiple IDs or `@usernames` separated by lines/commas/semicolons/spaces, or keep entering chats manually. Recent-chat selection and bulk input use one shared set of actions for all selected chats; manual entry retains per-chat setup. The first send-text action defaults to `签到` and can be edited. Sent-message cleanup is a shared choice of keep, 10, 30, or 60 seconds, defaulting to 10 seconds. A round is recorded as signed only when every configured action succeeds; a missing callback button or Telegram error is shown against its chat/action.
 
 Low-level entry (same dev workdir):
 

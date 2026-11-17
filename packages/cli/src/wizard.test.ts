@@ -44,14 +44,16 @@ describe("runInitWizard", () => {
       .mockResolvedValueOnce("")
       .mockResolvedValueOnce("/checkin")
       .mockResolvedValueOnce("签到")
-      .mockResolvedValueOnce("")
       .mockResolvedValueOnce("06:00:00")
       .mockResolvedValueOnce("30");
     vi.mocked(confirm)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(false);
-    vi.mocked(select).mockResolvedValueOnce("click_keyboard_by_text");
+    vi.mocked(select)
+      .mockResolvedValueOnce("manual")
+      .mockResolvedValueOnce("click_keyboard_by_text")
+      .mockResolvedValueOnce(null);
 
     await runInitWizard(workdir);
 

@@ -1,5 +1,10 @@
 import path from "node:path";
-import { TelegramClient, tl, type Message } from "@mtcute/node";
+import {
+  TelegramClient,
+  tl,
+  type ChatType,
+  type Message,
+} from "@mtcute/node";
 import { resolveCredentialsSync } from "./credentials.js";
 import { ensureWorkdir, workdirPaths } from "./paths.js";
 import type {
@@ -150,16 +155,29 @@ export function createTelegramBridge(client: TelegramClient): TelegramBridge {
 export async function loginAndListDialogs(
   workdir: string,
   limit = 20,
-): Promise<Array<{ id: number; name: string }>> {
+): Promise<
+  Array<{ id: number; name: string; type: "user" | "bot" | ChatType }>
+> {
   const client = createTelegramClient(workdir);
 
   try {
     await client.start();
-    const dialogs: Array<{ id: number; name: string }> = [];
+    const dialogs: Array<{
+      id: number;
+      name: string;
+      type: "user" | "bot" | ChatType;
+    }> = [];
     for await (const dialog of client.iterDialogs({ limit })) {
+      const peer = dialog.peer;
       dialogs.push({
-        id: dialog.peer.id,
-        name: dialog.peer.displayName,
+        id: peer.id,
+        name: peer.displayName,
+        type:
+          peer.type === "user"
+            ? peer.isBot
+              ? "bot"
+              : "user"
+            : peer.chatType,
       });
     }
     return dialogs;
