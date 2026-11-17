@@ -19,6 +19,14 @@ import { cancel, isCancel, password, text } from "@clack/prompts";
 import { defineCommand, runMain } from "citty";
 import { runInitWizard } from "./wizard.js";
 
+try {
+  process.loadEnvFile();
+} catch (error) {
+  if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") {
+    throw error;
+  }
+}
+
 let workdir = resolveWorkdir();
 
 function printSignResult(result: SignRunResult): void {

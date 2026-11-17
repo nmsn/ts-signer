@@ -38,6 +38,8 @@ Typical layout:
 
 Get Telegram API credentials from [my.telegram.org](https://my.telegram.org/) (or use env vars — see design doc §5.1).
 
+For local development, copy `.env.example` to `.env` and set `TG_API_ID` and `TG_API_HASH`. The CLI loads `.env` from the current working directory; `.env` is gitignored. Existing shell environment variables take precedence.
+
 ## Setup
 
 ```bash
