@@ -1,0 +1,21 @@
+README.md
+  s_fdfd60e5bc0463::t_783cf237bde8d9 66-67
+packages/cli/src/wizard.ts
+  s_fdfd60e5bc0463::t_5687006c76865d 4,165-239,271,275,283,303,306,341,354
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "73bf6d0b5b85d3c34ea86e0db0ec8b8ec35a2a36",
+  "prompts": {},
+  "sessions": {
+    "s_fdfd60e5bc0463": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e301-016d-7412-bcc2-fb77775216fe",
+        "model": "unknown"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
