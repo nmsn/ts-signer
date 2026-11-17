@@ -1,0 +1,25 @@
+.env.example
+  s_fdfd60e5bc0463::t_d43b5e572d4503 1-3
+README.md
+  s_fdfd60e5bc0463::t_b534998d010737 41-42
+package.json
+  s_fdfd60e5bc0463::t_7e23cda420980f 11
+packages/cli/src/cli.ts
+  s_fdfd60e5bc0463::t_4e6f9abc13db17 22-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "028b2fee25b25688e678c1d4b6243024ab766277",
+  "prompts": {},
+  "sessions": {
+    "s_fdfd60e5bc0463": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e301-016d-7412-bcc2-fb77775216fe",
+        "model": "unknown"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
