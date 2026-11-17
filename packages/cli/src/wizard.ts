@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import {
   loginAndListDialogs,
+  loadConfig,
   parseSignAt,
   saveConfig,
   type SignAction,
@@ -161,6 +162,81 @@ async function configureSharedChatSettings(
   }));
 }
 
+async function selectRecentChats(
+  dialogs: Awaited<ReturnType<typeof loginAndListDialogs>>,
+  existingConfig?: SignerConfig,
+): Promise<SignChat[]> {
+  const existingById = new Map(
+    (existingConfig?.chats ?? []).map((chat) => [
+      String(chat.chat_id).toLowerCase(),
+      chat,
+    ]),
+  );
+  const targetsById = new Map<string, ChatTarget>();
+  const optionsById = new Map<string, { value: string; label: string }>();
+
+  for (const dialog of dialogs) {
+    const key = String(dialog.id).toLowerCase();
+    targetsById.set(key, { id: dialog.id, name: dialog.name });
+    optionsById.set(key, {
+      value: key,
+      label: `${dialog.type}: ${dialog.name} (${dialog.id})`,
+    });
+  }
+
+  for (const chat of existingConfig?.chats ?? []) {
+    const key = String(chat.chat_id).toLowerCase();
+    if (optionsById.has(key)) {
+      continue;
+    }
+    targetsById.set(key, { id: chat.chat_id, name: chat.name });
+    optionsById.set(key, {
+      value: key,
+      label: `Configured: ${chat.name ?? chat.chat_id} (${chat.chat_id})`,
+    });
+  }
+
+  const initialValues = [...existingById.keys()].filter((key) => optionsById.has(key));
+  const selectedIds = promptValue(
+    await multiselect<string>({
+      message: "Select target chats (existing chats are checked; use space to toggle)",
+      options: [...optionsById.values()],
+      initialValues,
+      required: true,
+    }),
+  );
+
+  const selectedTargets = selectedIds.map((id) => {
+    const key = id.toLowerCase();
+    const target = targetsById.get(key);
+    if (!target) {
+      throw new Error(`Unable to resolve selected chat: ${id}`);
+    }
+    return { key, target };
+  });
+  const addedTargets = selectedTargets
+    .filter(({ key }) => !existingById.has(key))
+    .map(({ target }) => target);
+  const addedChats = addedTargets.length > 0
+    ? await configureSharedChatSettings(addedTargets)
+    : [];
+  const addedById = new Map(
+    addedChats.map((chat) => [String(chat.chat_id).toLowerCase(), chat]),
+  );
+
+  return selectedTargets.map(({ key }) => {
+    const existing = existingById.get(key);
+    if (existing) {
+      return existing;
+    }
+    const added = addedById.get(key);
+    if (!added) {
+      throw new Error(`Unable to configure selected chat: ${key}`);
+    }
+    return added;
+  });
+}
+
 async function promptChat(): Promise<SignChat> {
   const chatId = promptValue(
     await text({
@@ -192,10 +268,11 @@ export async function runInitWizard(workdir: string): Promise<void> {
 
   try {
     const configPath = workdirPaths(workdir).config;
+    let existingConfig: SignerConfig | undefined;
     if (fs.existsSync(configPath)) {
       const overwrite = promptValue(
         await confirm({
-          message: `${configPath} already exists. Overwrite it?`,
+          message: `${configPath} already exists. Overwrite it? Existing chats can be kept or removed in the recent-chat selection.`,
           initialValue: false,
         }),
       );
@@ -203,6 +280,7 @@ export async function runInitWizard(workdir: string): Promise<void> {
         cancel("Existing configuration kept");
         return;
       }
+      existingConfig = loadConfig(workdir);
     }
 
     const inputMode = promptValue(
@@ -222,23 +300,10 @@ export async function runInitWizard(workdir: string): Promise<void> {
     let chats: SignChat[];
     if (inputMode === "recent") {
       const dialogs = await loginAndListDialogs(workdir, 50);
-      if (dialogs.length === 0) {
+      if (dialogs.length === 0 && !existingConfig?.chats.length) {
         throw new Error("No recent Telegram dialogs were found.");
       }
-      const selectedIds = promptValue(
-        await multiselect<number>({
-          message: "Select target chats (use space to toggle, enter to confirm)",
-          options: dialogs.map((dialog) => ({
-            value: dialog.id,
-            label: `${dialog.type}: ${dialog.name} (${dialog.id})`,
-          })),
-          required: true,
-        }),
-      );
-      const targets = dialogs
-        .filter((dialog) => selectedIds.includes(dialog.id))
-        .map((dialog) => ({ id: dialog.id, name: dialog.name }));
-      chats = await configureSharedChatSettings(targets);
+      chats = await selectRecentChats(dialogs, existingConfig);
     } else if (inputMode === "batch") {
       const pastedIds = promptValue(
         await multiline({
@@ -273,7 +338,7 @@ export async function runInitWizard(workdir: string): Promise<void> {
     const signAtInput = promptValue(
       await text({
         message: "Sign-in time or cron expression",
-        initialValue: "08:00:00",
+        initialValue: existingConfig?.sign_at ?? "08:00:00",
         validate(value) {
           try {
             parseSignAt(value ?? "");
@@ -286,7 +351,7 @@ export async function runInitWizard(workdir: string): Promise<void> {
     const randomSecondsInput = promptValue(
       await text({
         message: "Maximum random delay in seconds",
-        initialValue: "60",
+        initialValue: String(existingConfig?.random_seconds ?? 60),
         validate: nonNegativeInteger,
       }),
     );

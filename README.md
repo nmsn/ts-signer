@@ -63,6 +63,8 @@ From the repo root (uses `./.dev-signer`):
 
 The initial CLI flow is `login` → `init` → `run-once` → `run`. In `init`, you can select multiple chats from the 50 most recent dialogs, paste multiple IDs or `@usernames` separated by lines/commas/semicolons/spaces, or keep entering chats manually. Recent-chat selection and bulk input use one shared set of actions for all selected chats; manual entry retains per-chat setup. The first send-text action defaults to `签到` and can be edited. Sent-message cleanup is a shared choice of keep, 10, 30, or 60 seconds, defaulting to 10 seconds. A round is recorded as signed only when every configured action succeeds; a missing callback button or Telegram error is shown against its chat/action.
 
+When editing an existing configuration, confirm overwrite and choose **recent Telegram dialogs** to manage chats with checkboxes. Currently configured chats start checked; uncheck one to remove it and check a new one to add it. Retained chats keep their existing actions and cleanup settings. Schedule and random delay start with their saved values.
+
 To use another Telegram account, add a named profile. This starts the phone/code login flow and saves that account's session, config, and state separately:
 
 ```bash
