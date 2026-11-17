@@ -1,0 +1,27 @@
+README.md
+  s_fdfd60e5bc0463::t_11fd2791910dfd 27,57-59,66-78,122
+package.json
+  s_fdfd60e5bc0463::t_355b870cf8dc72 13
+packages/cli/src/cli.ts
+  s_fdfd60e5bc0463::t_ae3a73f8c4af9e 11,13,15,21-22,35-37,64,92,98-116,123-163,168-206,208-219,336-339,342-344,349-350
+packages/core/src/index.ts
+  s_fdfd60e5bc0463::t_90db57c26a7a89 3-9
+packages/core/src/paths.ts
+  s_fdfd60e5bc0463::t_b5869d2ed79887 12-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d35704f9246319890b511258878a818496195b6c",
+  "prompts": {},
+  "sessions": {
+    "s_fdfd60e5bc0463": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e301-016d-7412-bcc2-fb77775216fe",
+        "model": "unknown"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
