@@ -1,0 +1,27 @@
+docs/superpowers/specs/2026-10-14-ts-signer-design.md
+  s_fdfd60e5bc0463::t_ab8fc58789ea67 151
+packages/cli/src/cli.ts
+  s_fdfd60e5bc0463::t_b5bb9ff79fab30 16,24-48,130,136-139,194-200
+packages/core/src/index.ts
+  s_fdfd60e5bc0463::t_e8769cd71ef340 24-26
+packages/core/src/signer.test.ts
+  s_fdfd60e5bc0463::t_946e88ca576ae8 210,214,224-226,229,234,240-242,253,268-273
+packages/core/src/signer.ts
+  s_fdfd60e5bc0463::t_e955fd6da09170 1,18-35,70,72,75,77-109,111-112,114-119,121-124,128-138,142-147,153-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a0772c66eb5247178df31dbe869457166e5a241",
+  "prompts": {},
+  "sessions": {
+    "s_fdfd60e5bc0463": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e301-016d-7412-bcc2-fb77775216fe",
+        "model": "unknown"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
