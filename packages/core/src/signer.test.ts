@@ -207,12 +207,11 @@ describe("signOnce", () => {
     warn.mockRestore();
   });
 
-  it("warns on click timeout and still completes the round", async () => {
+  it("reports callback timeout and does not mark the round signed", async () => {
     const bridge = new FakeBridge();
     const store = new FakeStore();
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    await signOnce({
+    const result = await signOnce({
       config: config([
         { type: "click_keyboard_by_text", text: "missing" },
       ]),
@@ -222,40 +221,36 @@ describe("signOnce", () => {
     });
 
     expect(bridge.clicked).toEqual([]);
-    expect(warn).toHaveBeenCalledOnce();
-    expect(store.marked).toHaveLength(1);
-    warn.mockRestore();
+    expect(result.success).toBe(false);
+    expect(result.chats[0]?.actions[0]?.error).toContain("No callback button");
+    expect(store.marked).toHaveLength(0);
   });
 
-  it("marks the round signed after a chat throws", async () => {
+  it("reports a failed action without marking the round signed", async () => {
     const bridge = new FakeBridge();
     const store = new FakeStore();
-    const now = new Date("2026-10-14T06:03:12.000Z");
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
     bridge.sendText = vi.fn().mockRejectedValue(new Error("offline"));
 
-    await signOnce({
+    const result = await signOnce({
       config: config([{ type: "send_text", text: "/sign" }]),
       bridge,
       store,
-      now,
     });
 
-    expect(error).toHaveBeenCalledOnce();
-    expect(store.marked).toEqual([now]);
-    error.mockRestore();
+    expect(result.success).toBe(false);
+    expect(result.chats[0]?.actions[0]?.error).toBe("offline");
+    expect(store.marked).toHaveLength(0);
   });
 
   it("continues with later actions after one action fails", async () => {
     const bridge = new FakeBridge();
     const store = new FakeStore();
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
     bridge.sendText = vi
       .fn<TelegramBridge["sendText"]>()
       .mockRejectedValueOnce(new Error("offline"))
       .mockResolvedValueOnce({ messageId: 43 });
 
-    await signOnce({
+    const result = await signOnce({
       config: config([
         { type: "send_text", text: "/first" },
         { type: "send_text", text: "/second" },
@@ -270,9 +265,12 @@ describe("signOnce", () => {
       "@signbot",
       "/second",
     );
-    expect(error).toHaveBeenCalledOnce();
-    expect(store.marked).toHaveLength(1);
-    error.mockRestore();
+    expect(result.success).toBe(false);
+    expect(result.chats[0]?.actions.map((action) => action.success)).toEqual([
+      false,
+      true,
+    ]);
+    expect(store.marked).toHaveLength(0);
   });
 
   it("returns without actions or marking when the round is not due", async () => {

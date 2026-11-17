@@ -13,12 +13,38 @@ import {
   runScheduler,
   saveCredentials,
   signOnce,
+  type SignRunResult,
 } from "@ts-signer/core";
 import { cancel, isCancel, password, text } from "@clack/prompts";
 import { defineCommand, runMain } from "citty";
 import { runInitWizard } from "./wizard.js";
 
 let workdir = resolveWorkdir();
+
+function printSignResult(result: SignRunResult): void {
+  if (result.skipped) {
+    console.log("Today's check-in is already complete; skipped.");
+    return;
+  }
+
+  for (const chat of result.chats) {
+    console.log(`${chat.success ? "✓" : "✗"} ${String(chat.chatId)}`);
+    for (const [index, action] of chat.actions.entries()) {
+      const description = `${action.action.type}: ${action.action.text}`;
+      console.log(
+        `  ${action.success ? "✓" : "✗"} ${index + 1}. ${description}${
+          action.error ? ` — ${action.error}` : ""
+        }`,
+      );
+    }
+  }
+
+  console.log(
+    result.success
+      ? "Check-in round completed successfully."
+      : "Check-in round incomplete; failed actions were not recorded as signed.",
+  );
+}
 
 async function promptForCredentials(): Promise<void> {
   const apiIdInput = await text({
@@ -101,12 +127,16 @@ const runOnce = defineCommand({
 
     try {
       await client.start();
-      await signOnce({
+      const result = await signOnce({
         config,
         bridge: createTelegramBridge(client),
         store: new JsonSignRecordStore(workdir),
         force: true,
       });
+      printSignResult(result);
+      if (!result.success) {
+        process.exitCode = 1;
+      }
     } finally {
       await client.destroy();
     }
@@ -161,7 +191,13 @@ const run = defineCommand({
         shouldStop: () => stopped,
         sleep,
         tick: async () => {
-          await signOnce({ config, bridge, store, force: false });
+          const result = await signOnce({
+            config,
+            bridge,
+            store,
+            force: false,
+          });
+          printSignResult(result);
         },
       });
     } finally {

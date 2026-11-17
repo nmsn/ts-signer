@@ -148,7 +148,7 @@ SignerEngine
 1. **`send_text`**：向该 chat 发文本；若配置了 `delete_after` 则稍后删除。
 2. **`click_keyboard_by_text`**：在超时窗口内收集该 chat 新消息，找 Inline 按钮文案**包含**配置文字的项并触发 callback；超时则打 warning 并跳过（不中断整次任务）。
 
-执行顺序：按 `chats` → 按 `actions` 依次执行。整轮尝试结束后写签到记录（个别 chat 失败仍记「本轮已跑过」，避免失败 chat 导致无限重试；与原版行为一致）。
+执行顺序：按 `chats` → 按 `actions` 依次执行。每个 chat/action 的结果返回给 CLI；所有配置动作都成功后才写签到记录。动作失败或按钮等待超时会显示为失败，不把未完成的轮次记为已签到。
 
 ### 4.3 `state.json`
 

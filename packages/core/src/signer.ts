@@ -1,4 +1,4 @@
-import type { SignerConfig } from "./config.js";
+import type { SignAction, SignerConfig } from "./config.js";
 import { findButtonByText } from "./keyboard.js";
 import { needSign } from "./schedule.js";
 import type { SignRecordStore } from "./store.js";
@@ -13,6 +13,24 @@ export type IncomingButton = {
 export type IncomingMessage = {
   messageId: number;
   buttons: IncomingButton[];
+};
+
+export type SignActionResult = {
+  action: SignAction;
+  success: boolean;
+  error?: string;
+};
+
+export type SignChatResult = {
+  chatId: ChatId;
+  success: boolean;
+  actions: SignActionResult[];
+};
+
+export type SignRunResult = {
+  skipped: boolean;
+  success: boolean;
+  chats: SignChatResult[];
 };
 
 export interface TelegramBridge {
@@ -49,82 +67,92 @@ export async function signOnce({
   force = false,
   now = new Date(),
   clickTimeoutMs = 10_000,
-}: SignOnceOptions): Promise<void> {
+}: SignOnceOptions): Promise<SignRunResult> {
   if (!needSign(store.load(), config.sign_at, now, force)) {
-    return;
+    return { skipped: true, success: true, chats: [] };
   }
 
+  const chatResults: SignChatResult[] = [];
   for (const [chatIndex, chat] of config.chats.entries()) {
-    try {
-      for (const [actionIndex, action] of chat.actions.entries()) {
-        try {
-          if (action.type === "send_text") {
-            const sent = await bridge.sendText(chat.chat_id, action.text);
-            if (chat.delete_after !== null) {
-              await sleep(chat.delete_after * 1_000);
-              await bridge.deleteMessages(chat.chat_id, [sent.messageId]);
-            }
-          } else {
-            bridge.clearIncoming(chat.chat_id);
-            const deadline = Date.now() + clickTimeoutMs;
-            let match:
-              | {
-                  message: IncomingMessage;
-                  button: IncomingButton;
-                }
-              | undefined;
-
-            do {
-              const messages = await bridge.waitForIncoming(
-                chat.chat_id,
-                Math.max(0, deadline - Date.now()),
-              );
-              match = messages
-                .map((message) => ({
-                  message,
-                  button: findButtonByText(message.buttons, action.text),
-                }))
-                .find(
-                  (
-                    candidate,
-                  ): candidate is {
-                    message: IncomingMessage;
-                    button: IncomingButton;
-                  } => candidate.button !== undefined,
-                );
-            } while (!match && Date.now() < deadline);
-
-            if (match) {
-              await bridge.clickCallback(
-                chat.chat_id,
-                match.message.messageId,
-                match.button.data,
-              );
-            } else {
-              console.warn(
-                `No callback button containing "${action.text}" found in ${String(chat.chat_id)}`,
-              );
-            }
+    const actionResults: SignActionResult[] = [];
+    for (const [actionIndex, action] of chat.actions.entries()) {
+      try {
+        if (action.type === "send_text") {
+          const sent = await bridge.sendText(chat.chat_id, action.text);
+          if (chat.delete_after !== null) {
+            await sleep(chat.delete_after * 1_000);
+            await bridge.deleteMessages(chat.chat_id, [sent.messageId]);
           }
-        } catch (error) {
-          console.error(
-            `Failed action ${actionIndex + 1} in chat ${String(chat.chat_id)}:`,
-            error,
+        } else {
+          bridge.clearIncoming(chat.chat_id);
+          const deadline = Date.now() + clickTimeoutMs;
+          let match:
+            | {
+                message: IncomingMessage;
+                button: IncomingMessage["buttons"][number];
+              }
+            | undefined;
+
+          do {
+            const messages = await bridge.waitForIncoming(
+              chat.chat_id,
+              Math.max(0, deadline - Date.now()),
+            );
+            match = messages
+              .map((message) => ({
+                message,
+                button: findButtonByText(message.buttons, action.text),
+              }))
+              .find(
+                (
+                  candidate,
+                ): candidate is {
+                  message: IncomingMessage;
+                  button: IncomingMessage["buttons"][number];
+                } => candidate.button !== undefined,
+              );
+          } while (!match && Date.now() < deadline);
+
+          if (!match) {
+            throw new Error(
+              `No callback button containing "${action.text}" found`,
+            );
+          }
+          await bridge.clickCallback(
+            chat.chat_id,
+            match.message.messageId,
+            match.button.data,
           );
         }
 
-        if (actionIndex < chat.actions.length - 1) {
-          await sleep(chat.action_interval * 1_000);
-        }
+        actionResults.push({ action, success: true });
+      } catch (error) {
+        actionResults.push({
+          action,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-    } catch (error) {
-      console.error(`Failed to sign chat ${String(chat.chat_id)}:`, error);
+
+      if (actionIndex < chat.actions.length - 1) {
+        await sleep(chat.action_interval * 1_000);
+      }
     }
+
+    chatResults.push({
+      chatId: chat.chat_id,
+      success: actionResults.every((result) => result.success),
+      actions: actionResults,
+    });
 
     if (chatIndex < config.chats.length - 1) {
       await sleep(config.sign_interval * 1_000);
     }
   }
 
-  store.markSigned(now);
+  const success = chatResults.every((result) => result.success);
+  if (success) {
+    store.markSigned(now);
+  }
+  return { skipped: false, success, chats: chatResults };
 }

@@ -21,6 +21,9 @@ export {
   signOnce,
   type IncomingButton,
   type IncomingMessage,
+  type SignActionResult,
+  type SignChatResult,
+  type SignRunResult,
   type TelegramBridge,
 } from "./signer.js";
 export {
