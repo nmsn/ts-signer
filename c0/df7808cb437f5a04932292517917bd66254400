@@ -1,0 +1,25 @@
+README.md
+  s_fdfd60e5bc0463::t_057c88efab927e 57-58,61-62
+packages/cli/src/wizard.test.ts
+  s_fdfd60e5bc0463::t_7f1f51058ed0b9 53-56
+packages/cli/src/wizard.ts
+  s_fdfd60e5bc0463::t_5e4307a3e2539d 3,16-17,25-31,64-93,101,108,132-133,135-165,167-174,178-180,184,208-219,222-272,276,289
+packages/core/src/client.ts
+  s_fdfd60e5bc0463::t_fc5e7f2133fedd 2-7,158-160,165-169,171,173-180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c0df7808cb437f5a04932292517917bd66254400",
+  "prompts": {},
+  "sessions": {
+    "s_fdfd60e5bc0463": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e301-016d-7412-bcc2-fb77775216fe",
+        "model": "unknown"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
