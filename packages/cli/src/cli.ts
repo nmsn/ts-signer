@@ -8,13 +8,18 @@ import {
   loadConfig,
   loadCredentials,
   loginAndListDialogs,
+  normalizeAccountName,
   resolveCredentials,
+  resolveAccountWorkdir,
   resolveWorkdir,
+  workdirPaths,
   runScheduler,
   saveCredentials,
   signOnce,
   type SignRunResult,
 } from "@ts-signer/core";
+import fs from "node:fs";
+import path from "node:path";
 import { cancel, isCancel, password, text } from "@clack/prompts";
 import { defineCommand, runMain } from "citty";
 import { runInitWizard } from "./wizard.js";
@@ -27,7 +32,9 @@ try {
   }
 }
 
-let workdir = resolveWorkdir();
+let baseWorkdir = resolveWorkdir();
+let workdir = baseWorkdir;
+let selectedProfile = "default";
 
 function printSignResult(result: SignRunResult): void {
   if (result.skipped) {
@@ -54,7 +61,7 @@ function printSignResult(result: SignRunResult): void {
   );
 }
 
-async function promptForCredentials(): Promise<void> {
+async function promptForCredentials(targetWorkdir: string): Promise<void> {
   const apiIdInput = await text({
     message: "Telegram API ID",
     validate(value) {
@@ -82,10 +89,29 @@ async function promptForCredentials(): Promise<void> {
     throw new Error("Login cancelled");
   }
 
-  saveCredentials(workdir, {
+  saveCredentials(targetWorkdir, {
     apiId: Number(apiIdInput),
     apiHash,
   });
+}
+
+async function ensureCredentials(targetWorkdir: string): Promise<void> {
+  ensureWorkdir(targetWorkdir);
+  if (loadCredentials(targetWorkdir)) {
+    return;
+  }
+
+  try {
+    await resolveCredentials(targetWorkdir);
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.startsWith("Telegram API credentials not found.")
+    ) {
+      throw error;
+    }
+    await promptForCredentials(targetWorkdir);
+  }
 }
 
 const login = defineCommand({
@@ -94,23 +120,103 @@ const login = defineCommand({
     description: "Log in to Telegram and list recent dialogs",
   },
   async run() {
-    ensureWorkdir(workdir);
-    if (!loadCredentials(workdir)) {
-      try {
-        await resolveCredentials(workdir);
-      } catch (error) {
-        if (
-          !(error instanceof Error) ||
-          !error.message.startsWith("Telegram API credentials not found.")
-        ) {
-          throw error;
+    await ensureCredentials(workdir);
+    const dialogs = await loginAndListDialogs(workdir);
+    console.table(dialogs);
+  },
+});
+
+const logout = defineCommand({
+  meta: {
+    name: "logout",
+    description: "Log out the Telegram account selected by --profile",
+  },
+  async run() {
+    const { sessionDir } = workdirPaths(workdir);
+    const sessionFile = path.join(sessionDir, "telegram.session");
+    if (!fs.existsSync(sessionFile)) {
+      console.log(`No local Telegram session found for profile "${selectedProfile}".`);
+      return;
+    }
+
+    const client = createTelegramClient(workdir);
+    try {
+      await client.logOut();
+      console.log(`Logged out profile "${selectedProfile}" from Telegram.`);
+    } finally {
+      await client.destroy();
+    }
+  },
+});
+
+const accountList = defineCommand({
+  meta: {
+    name: "list",
+    description: "List local account profiles",
+  },
+  run() {
+    const accountsDir = path.join(baseWorkdir, "accounts");
+    const profiles = [{ name: "default", dir: baseWorkdir }];
+    if (fs.existsSync(accountsDir)) {
+      for (const entry of fs.readdirSync(accountsDir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          profiles.push({ name: entry.name, dir: path.join(accountsDir, entry.name) });
         }
-        await promptForCredentials();
       }
     }
 
-    const dialogs = await loginAndListDialogs(workdir);
+    console.table(
+      profiles.map(({ name, dir }) => ({
+        profile: name,
+        selected: name === selectedProfile ? "✓" : "",
+        session: fs.existsSync(path.join(workdirPaths(dir).sessionDir, "telegram.session"))
+          ? "file present"
+          : "file missing",
+      })),
+    );
+  },
+});
+
+const accountAdd = defineCommand({
+  meta: {
+    name: "add",
+    description: "Create a profile and log in a Telegram account",
+  },
+  args: {
+    name: {
+      type: "positional",
+      description: "Profile name (letters, numbers, hyphens, underscores)",
+      required: true,
+    },
+  },
+  async run({ args }) {
+    const name = normalizeAccountName(args.name);
+    if (name === "default") {
+      throw new Error('The profile name "default" is reserved for the base work directory.');
+    }
+    const profileWorkdir = resolveAccountWorkdir(baseWorkdir, name);
+    if (fs.existsSync(profileWorkdir)) {
+      throw new Error(
+        `Profile "${name}" already exists. To log in or retry, run: ts-signer --profile ${name} login`,
+      );
+    }
+
+    await ensureCredentials(profileWorkdir);
+    const dialogs = await loginAndListDialogs(profileWorkdir);
+    console.log(`Profile "${name}" logged in. Recent dialogs:`);
     console.table(dialogs);
+    console.log(`Use it with: ts-signer --profile ${name} init`);
+  },
+});
+
+const account = defineCommand({
+  meta: {
+    name: "account",
+    description: "Manage isolated Telegram account profiles",
+  },
+  subCommands: {
+    add: accountAdd,
+    list: accountList,
   },
 });
 
@@ -227,13 +333,21 @@ const main = defineCommand({
       type: "string",
       description: "Working directory",
     },
+    profile: {
+      type: "string",
+      description: "Account profile to use (default: base work directory)",
+    },
   },
   setup({ args }) {
-    workdir = resolveWorkdir(args.workdir);
+    baseWorkdir = resolveWorkdir(args.workdir);
+    selectedProfile = args.profile ? normalizeAccountName(args.profile) : "default";
+    workdir = resolveAccountWorkdir(baseWorkdir, selectedProfile);
   },
   subCommands: {
     init,
     login,
+    logout,
+    account,
     run,
     "run-once": runOnce,
   },

@@ -24,7 +24,7 @@ Design and scope: [`docs/superpowers/specs/2026-10-14-ts-signer-design.md`](docs
 **Product default (personal use):** `~/.ts-signer/`
 Override anytime: `ts-signer --workdir <path> …`
 
-**Development (this repo):** keep generated data under **`./.dev-signer/`** so nothing lands in your home directory by accident. Root scripts pass `--workdir ./.dev-signer` automatically.
+**Development (this repo):** keep generated data under **`./.dev-signer/`** so nothing lands in your home directory by accident. Root scripts pass `--workdir ./.dev-signer` automatically. Additional account profiles are isolated under `./.dev-signer/accounts/<profile>/`.
 
 Typical layout:
 
@@ -54,11 +54,27 @@ From the repo root (uses `./.dev-signer`):
 | Script | CLI command | Purpose |
 |--------|-------------|---------|
 | `pnpm signer:login` | `login` | Sign in; print recent dialogs (ids/names) for manual `chat_id` |
+| `pnpm signer:logout` | `logout` | Revoke the selected profile's Telegram session |
+| `pnpm ts-signer account list` | `account list` | List profiles and whether each has a local session file |
+| `pnpm ts-signer account add <name>` | `account add <name>` | Create an isolated profile and sign in a new Telegram account |
 | `pnpm signer:init` | `init` | Interactive wizard to create/overwrite `config.json`; choose recent chats, paste IDs in bulk, or enter them one at a time |
 | `pnpm signer:run-once` | `run-once` | Run one sign round now; failed actions are reported and the round is not recorded as signed |
 | `pnpm signer:run` | `run` | Long-running cron scheduler |
 
 The initial CLI flow is `login` → `init` → `run-once` → `run`. In `init`, you can select multiple chats from the 50 most recent dialogs, paste multiple IDs or `@usernames` separated by lines/commas/semicolons/spaces, or keep entering chats manually. Recent-chat selection and bulk input use one shared set of actions for all selected chats; manual entry retains per-chat setup. The first send-text action defaults to `签到` and can be edited. Sent-message cleanup is a shared choice of keep, 10, 30, or 60 seconds, defaulting to 10 seconds. A round is recorded as signed only when every configured action succeeds; a missing callback button or Telegram error is shown against its chat/action.
+
+To use another Telegram account, add a named profile. This starts the phone/code login flow and saves that account's session, config, and state separately:
+
+```bash
+pnpm ts-signer account add work
+pnpm ts-signer account list
+pnpm ts-signer --profile work init
+pnpm ts-signer --profile work run-once
+pnpm ts-signer --profile work run
+pnpm ts-signer --profile work logout
+```
+
+`--profile` selects an account for that command; it does not change a persistent global active account. Use `--profile work login` to sign in again after logging out. The existing base work directory remains the `default` profile. Profiles share API credentials from `.env`/the shell when set; otherwise credentials are prompted and saved inside the profile directory. `account list` only reports whether a local session file exists; Telegram may have invalidated a session remotely.
 
 Low-level entry (same dev workdir):
 
@@ -103,7 +119,7 @@ Not implemented in this release; see [design §10](docs/superpowers/specs/2026-1
 - **Points / reply parsing** from sign-in bot messages
 - **SQLite** history and analytics (v1 uses `state.json` only)
 
-Also excluded in v1: proxy UI, multi-account, topics, monitor/automation/WebUI, AI actions, and migration from the Python project — full list in the design doc §1.2.
+Also excluded in v1: proxy UI, automatic account switching across one config, topics, monitor/automation/WebUI, AI actions, and migration from the Python project — full list in the design doc §1.2.
 
 ## License
 

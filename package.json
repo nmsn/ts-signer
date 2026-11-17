@@ -10,6 +10,7 @@
     "test": "pnpm -r --if-present run test",
     "ts-signer": "node ./packages/cli/dist/cli.js --workdir ./.dev-signer",
     "signer:login": "pnpm ts-signer login",
+    "signer:logout": "pnpm ts-signer logout",
     "signer:init": "pnpm ts-signer init",
     "signer:run": "pnpm ts-signer run",
     "signer:run-once": "pnpm ts-signer run-once"

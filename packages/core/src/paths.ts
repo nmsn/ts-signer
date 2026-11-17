@@ -9,6 +9,27 @@ export function resolveWorkdir(explicit?: string): string {
   return path.join(os.homedir(), ".ts-signer");
 }
 
+export function normalizeAccountName(name: string): string {
+  const normalized = name.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(normalized)) {
+    throw new Error(
+      "Account names must be 1–32 characters using letters, numbers, hyphens, or underscores.",
+    );
+  }
+  return normalized;
+}
+
+export function resolveAccountWorkdir(
+  baseWorkdir: string,
+  accountName: string,
+): string {
+  const normalized = normalizeAccountName(accountName);
+  if (normalized === "default") {
+    return path.resolve(baseWorkdir);
+  }
+  return path.join(path.resolve(baseWorkdir), "accounts", normalized);
+}
+
 export function workdirPaths(workdir: string) {
   return {
     root: workdir,
