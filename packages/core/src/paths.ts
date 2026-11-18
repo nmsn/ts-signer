@@ -35,6 +35,7 @@ export function workdirPaths(workdir: string) {
     root: workdir,
     config: path.join(workdir, "config.json"),
     state: path.join(workdir, "state.json"),
+    history: path.join(workdir, "history.sqlite"),
     sessionDir: path.join(workdir, "session"),
     credentials: path.join(workdir, "credentials.json"),
   };

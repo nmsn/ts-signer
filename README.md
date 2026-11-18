@@ -2,7 +2,7 @@
 
 Minimal Telegram **user-account** check-in tool: log in via MTProto (MTCute), run cron-driven sign flows (send text, optionally tap inline keyboard buttons), and track whether today’s run already happened.
 
-Inspired by the Python [tg-signer](https://github.com/nmsn/tg-signer) project, but v1 is a deliberately small subset (CLI only, single account, JSON state).
+Inspired by the Python [tg-signer](https://github.com/nmsn/tg-signer) project, v1 is a deliberately small CLI subset with isolated account profiles and local SQLite run history.
 
 ## Requirements
 
@@ -31,7 +31,8 @@ Typical layout:
 ```
 <workdir>/
 ├── config.json          # schedule + chats + actions
-├── state.json           # last signed date (v1)
+├── history.sqlite       # sign runs, channel outcomes, observed replies
+├── state.json           # imported once if migrating from an older version
 ├── session/             # MTCute session storage (sensitive)
 └── credentials.json     # optional apiId/apiHash (sensitive)
 ```
@@ -60,8 +61,13 @@ From the repo root (uses `./.dev-signer`):
 | `pnpm signer:init` | `init` | Interactive wizard to create/overwrite `config.json`; choose recent chats, paste IDs in bulk, or enter them one at a time |
 | `pnpm signer:run-once` | `run-once` | Run one sign round now; failed actions are reported and the round is not recorded as signed |
 | `pnpm signer:run` | `run` | Long-running cron scheduler |
+| `pnpm signer:history` | `history` | Show recent runs, channel outcomes, and observed replies |
 
-The initial CLI flow is `login` → `init` → `run-once` → `run`. In `init`, you can select multiple chats from the 50 most recent dialogs, paste multiple IDs or `@usernames` separated by lines/commas/semicolons/spaces, or keep entering chats manually. Recent-chat selection and bulk input use one shared set of actions for all selected chats; manual entry retains per-chat setup. The first send-text action defaults to `签到` and can be edited. Sent-message cleanup is a shared choice of keep, 10, 30, or 60 seconds, defaulting to 10 seconds. A round is recorded as signed only when every configured action succeeds; a missing callback button or Telegram error is shown against its chat/action.
+The initial CLI flow is `login` → `init` → `run-once` → `run`. In `init`, you can select multiple chats from the 50 most recent dialogs, paste multiple IDs or `@usernames` separated by lines/commas/semicolons/spaces, or keep entering chats manually. Recent-chat selection and bulk input use one shared set of actions for all selected chats; manual entry retains per-chat setup. The first send-text action defaults to `签到` and can be edited. Sent-message cleanup is a shared choice of keep, 10, 30, or 60 seconds, defaulting to 10 seconds. The scheduler marks a day complete only when every configured Telegram action succeeds; a missing callback button or Telegram error is shown against its chat/action.
+
+After each text send, the CLI observes incoming messages in that chat for up to 10 seconds and records their text, sender category (bot, human, channel, anonymous, or unknown), and whether they directly replied to the sent message. These observations also appear in `run-once` output and `history` (latest 20 runs by default; use `--limit 1–100`). This identifies who sent a message, but does not determine whether the check-in succeeded: without group-specific response rules, the result remains “sent, unconfirmed.” Messages are limited to 2,000 characters and only collected during the response window; unrelated messages in that window may be logged as time-window observations.
+
+`history.sqlite` is local to each workdir/profile and is created with restrictive file permissions. On first use, an older `state.json` is imported as the scheduling checkpoint and left in place as a backup. Future state updates go to SQLite.
 
 When editing an existing configuration, confirm overwrite and choose **recent Telegram dialogs** to manage chats with checkboxes. Currently configured chats start checked; uncheck one to remove it and check a new one to add it. Retained chats keep their existing actions and cleanup settings. Schedule and random delay start with their saved values.
 
@@ -119,9 +125,8 @@ Not implemented in this release; see [design §10](docs/superpowers/specs/2026-1
 
 - **Electron** desktop UI (`packages/electron` is reserved)
 - **Points / reply parsing** from sign-in bot messages
-- **SQLite** history and analytics (v1 uses `state.json` only)
 
-Also excluded in v1: proxy UI, automatic account switching across one config, topics, monitor/automation/WebUI, AI actions, and migration from the Python project — full list in the design doc §1.2.
+Also excluded in v1: automatic success/failure interpretation of bot replies, proxy UI, automatic account switching across one config, topics, monitor/automation/WebUI, AI actions, and migration from the Python project — full list in the design doc §1.2.
 
 ## License
 

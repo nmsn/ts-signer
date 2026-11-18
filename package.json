@@ -13,6 +13,7 @@
     "signer:logout": "pnpm ts-signer logout",
     "signer:init": "pnpm ts-signer init",
     "signer:run": "pnpm ts-signer run",
-    "signer:run-once": "pnpm ts-signer run-once"
+    "signer:run-once": "pnpm ts-signer run-once",
+    "signer:history": "pnpm ts-signer history"
   }
 }

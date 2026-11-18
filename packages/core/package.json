@@ -18,12 +18,14 @@
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.5",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   },
   "dependencies": {
     "@mtcute/node": "^0.32.4",
+    "better-sqlite3": "12.11.1",
     "croner": "^10.0.1",
     "zod": "^4.6.7"
   }

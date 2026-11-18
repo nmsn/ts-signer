@@ -18,7 +18,15 @@ export {
 } from "./config.js";
 export {
   JsonSignRecordStore,
+  SqliteSignRecordStore,
   type SignRecordStore,
+  type SignHistoryStore,
+  type SignRunTrigger,
+  type SignHistoryRun,
+  type SignHistoryChat,
+  type SignHistoryReply,
+  type SignExecutionStatus,
+  type SignReplySenderType,
 } from "./store.js";
 export { needSign, computeNextRun, type SignState } from "./schedule.js";
 export { runScheduler, type SchedulerOptions } from "./scheduler.js";
@@ -27,6 +35,9 @@ export {
   signOnce,
   type IncomingButton,
   type IncomingMessage,
+  type ObservedMessage,
+  type IncomingWatch,
+  type SignReply,
   type SignActionResult,
   type SignChatResult,
   type SignRunResult,

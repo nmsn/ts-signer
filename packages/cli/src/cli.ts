@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {
   CORE_VERSION,
-  JsonSignRecordStore,
+  SqliteSignRecordStore,
   createTelegramBridge,
   createTelegramClient,
   ensureWorkdir,
@@ -16,6 +16,8 @@ import {
   runScheduler,
   saveCredentials,
   signOnce,
+  type SignHistoryReply,
+  type SignHistoryRun,
   type SignRunResult,
 } from "@ts-signer/core";
 import fs from "node:fs";
@@ -43,7 +45,9 @@ function printSignResult(result: SignRunResult): void {
   }
 
   for (const chat of result.chats) {
-    console.log(`${chat.success ? "✓" : "✗"} ${String(chat.chatId)}`);
+    console.log(
+      `${chat.success ? "✓" : "✗"} ${chat.chatName ? `${chat.chatName} ` : ""}${String(chat.chatId)}`,
+    );
     for (const [index, action] of chat.actions.entries()) {
       const description = `${action.action.type}: ${action.action.text}`;
       console.log(
@@ -52,13 +56,80 @@ function printSignResult(result: SignRunResult): void {
         }`,
       );
     }
+    if (
+      chat.replies.length === 0 &&
+      chat.actions.some(
+        (action) => action.success && action.action.type === "send_text",
+      )
+    ) {
+      console.log("  No replies observed in the 10-second window.");
+    }
+    for (const reply of chat.replies) {
+      console.log(`  ↳ ${formatReply(reply)}`);
+    }
   }
 
   console.log(
     result.success
-      ? "Check-in round completed successfully."
-      : "Check-in round incomplete; failed actions were not recorded as signed.",
+      ? "Telegram actions completed successfully; check-in success is unconfirmed."
+      : "Telegram actions incomplete; the round was not recorded as signed.",
   );
+}
+
+function formatReply(
+  reply: Pick<SignHistoryReply, "senderType" | "senderName" | "relation" | "text">,
+): string {
+  const relation = reply.relation === "direct_reply" ? "direct reply" : "same-chat window";
+  const senderName = oneLine(reply.senderName) || "Unknown sender";
+  const messageText = oneLine(reply.text) || "[non-text message]";
+  return `${reply.senderType} ${senderName} [${relation}]: ${messageText}`;
+}
+
+function oneLine(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleString();
+}
+
+function printHistory(runs: SignHistoryRun[]): void {
+  if (runs.length === 0) {
+    console.log("No sign-in history found.");
+    return;
+  }
+
+  const statuses = {
+    running: "unfinished",
+    success: "actions succeeded (unconfirmed)",
+    partial: "actions partially failed",
+    failed: "actions failed",
+  } satisfies Record<SignHistoryRun["executionStatus"], string>;
+
+  for (const run of runs) {
+    console.log(
+      `#${run.id} ${formatDate(run.startedAt)} ${run.trigger} — ${statuses[run.executionStatus]}`,
+    );
+    for (const chat of run.chats) {
+      const name = chat.chatName ? `${chat.chatName} ` : "";
+      const outcome =
+        chat.actionStatus === "success"
+          ? "actions succeeded; unconfirmed"
+          : "actions failed; confirmation unavailable";
+      console.log(
+        `  ${chat.actionStatus === "success" ? "✓" : "✗"} ${name}${chat.chatId} — ${outcome}`,
+      );
+      if (chat.error) {
+        console.log(`    Error: ${chat.error}`);
+      }
+      if (chat.replies.length === 0) {
+        console.log("    No replies observed.");
+      }
+      for (const reply of chat.replies) {
+        console.log(`    ↳ ${formatDate(reply.receivedAt)} ${formatReply(reply)}`);
+      }
+    }
+  }
 }
 
 async function promptForCredentials(targetWorkdir: string): Promise<void> {
@@ -237,22 +308,52 @@ const runOnce = defineCommand({
   },
   async run() {
     const config = loadConfig(workdir);
-    const client = createTelegramClient(workdir);
-
+    const store = new SqliteSignRecordStore(workdir);
     try {
-      await client.start();
-      const result = await signOnce({
-        config,
-        bridge: createTelegramBridge(client),
-        store: new JsonSignRecordStore(workdir),
-        force: true,
-      });
-      printSignResult(result);
-      if (!result.success) {
-        process.exitCode = 1;
+      const client = createTelegramClient(workdir);
+      try {
+        await client.start();
+        const result = await signOnce({
+          config,
+          bridge: createTelegramBridge(client),
+          store,
+          force: true,
+          trigger: "manual",
+        });
+        printSignResult(result);
+        if (!result.success) {
+          process.exitCode = 1;
+        }
+      } finally {
+        await client.destroy();
       }
     } finally {
-      await client.destroy();
+      store.close();
+    }
+  },
+});
+
+const history = defineCommand({
+  meta: {
+    name: "history",
+    description: "Show recent sign-in runs and observed replies",
+  },
+  args: {
+    limit: {
+      type: "string",
+      description: "Number of recent runs to show (1–100, default: 20)",
+    },
+  },
+  run({ args }) {
+    const limit = args.limit === undefined ? 20 : Number(args.limit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      throw new Error("History limit must be an integer from 1 to 100.");
+    }
+    const store = new SqliteSignRecordStore(workdir);
+    try {
+      printHistory(store.listRuns(limit));
+    } finally {
+      store.close();
     }
   },
 });
@@ -264,9 +365,8 @@ const run = defineCommand({
   },
   async run() {
     const config = loadConfig(workdir);
-    const client = createTelegramClient(workdir);
-    const bridge = createTelegramBridge(client);
-    const store = new JsonSignRecordStore(workdir);
+    const store = new SqliteSignRecordStore(workdir);
+    let client: ReturnType<typeof createTelegramClient> | undefined;
     let stopped = false;
     let wakeSleep: (() => void) | undefined;
 
@@ -299,6 +399,8 @@ const run = defineCommand({
     process.once("SIGTERM", stop);
 
     try {
+      client = createTelegramClient(workdir);
+      const bridge = createTelegramBridge(client);
       await client.start();
       await runScheduler({
         config,
@@ -310,6 +412,7 @@ const run = defineCommand({
             bridge,
             store,
             force: false,
+            trigger: "scheduled",
           });
           printSignResult(result);
         },
@@ -317,7 +420,11 @@ const run = defineCommand({
     } finally {
       process.removeListener("SIGINT", stop);
       process.removeListener("SIGTERM", stop);
-      await client.destroy();
+      try {
+        await client?.destroy();
+      } finally {
+        store.close();
+      }
     }
   },
 });
@@ -349,6 +456,7 @@ const main = defineCommand({
     logout,
     account,
     run,
+    history,
     "run-once": runOnce,
   },
 });

@@ -9,6 +9,7 @@ import { resolveCredentialsSync } from "./credentials.js";
 import { ensureWorkdir, workdirPaths } from "./paths.js";
 import type {
   IncomingMessage,
+  ObservedMessage,
   TelegramBridge,
 } from "./signer.js";
 
@@ -60,7 +61,19 @@ function normalizeChatKey(chatId: number | string): string {
   return typeof chatId === "string" ? chatId.toLowerCase() : String(chatId);
 }
 
-function toIncomingMessage(message: Message): IncomingMessage {
+function toIncomingMessage(message: Message): ObservedMessage {
+  const sender = message.sender;
+  let senderType: ObservedMessage["senderType"];
+  if (sender?.type === "user") {
+    senderType = sender.isBot ? "bot" : "human";
+  } else if (sender?.type === "chat" && sender.chatType === "channel") {
+    senderType = "channel";
+  } else if (sender && sender.id === message.chat.id) {
+    senderType = "anonymous";
+  } else {
+    senderType = "unknown";
+  }
+
   const buttons =
     message.markup?.type === "inline"
       ? message.markup.buttons
@@ -71,26 +84,57 @@ function toIncomingMessage(message: Message): IncomingMessage {
               : [],
           )
       : [];
-  return { messageId: message.id, buttons };
+  return {
+    messageId: message.id,
+    chatId: message.chat.id,
+    date: message.date ?? new Date(),
+    text: message.text ?? "",
+    senderId: sender?.id ?? null,
+    senderName: sender?.displayName ?? "Unknown sender",
+    senderType,
+    replyToMessageId: message.replyToMessage?.id ?? null,
+    buttons,
+  };
 }
+
+type MessageWatcher = {
+  messages: ObservedMessage[];
+  resolve(messages: ObservedMessage[]): void;
+  timer: ReturnType<typeof setTimeout>;
+  settled: boolean;
+};
 
 export function createTelegramBridge(client: TelegramClient): TelegramBridge {
   const buffers = new Map<string, IncomingMessage[]>();
   const waiters = new Map<string, () => void>();
+  const watchers = new Map<string, Set<MessageWatcher>>();
 
   client.onNewMessage.add((message) => {
-    if (message.isOutgoing) {
+    if (message.isOutgoing || message.isService) {
       return;
     }
     const incoming = toIncomingMessage(message);
+    const keys = chatKeys(message);
+
+    const activeWatchers = new Set(
+      keys.flatMap((key) => [...(watchers.get(key) ?? [])]),
+    );
+    for (const watcher of activeWatchers) {
+      watcher.messages.push(incoming);
+    }
+
     if (incoming.buttons.length === 0) {
       return;
     }
-    const keys = chatKeys(message);
+
+    const callbackMessage: IncomingMessage = {
+      messageId: incoming.messageId,
+      buttons: incoming.buttons,
+    };
     const messages =
       keys.map((key) => buffers.get(key)).find((buffer) => buffer !== undefined) ??
       [];
-    messages.push(incoming);
+    messages.push(callbackMessage);
     for (const key of keys) {
       buffers.set(key, messages);
       waiters.get(key)?.();
@@ -119,6 +163,41 @@ export function createTelegramBridge(client: TelegramClient): TelegramBridge {
     },
     clearIncoming(chatId) {
       drain(normalizeChatKey(chatId));
+    },
+    watchIncoming(chatId, timeoutMs) {
+      const key = normalizeChatKey(chatId);
+      let watcher!: MessageWatcher;
+      let finish!: () => void;
+      const result = new Promise<ObservedMessage[]>((resolve) => {
+        watcher = {
+          messages: [],
+          resolve,
+          timer: setTimeout(() => finish(), timeoutMs),
+          settled: false,
+        };
+      });
+
+      const removeWatcher = () => {
+        const watchersForChat = watchers.get(key);
+        watchersForChat?.delete(watcher);
+        if (watchersForChat?.size === 0) {
+          watchers.delete(key);
+        }
+      };
+      finish = () => {
+        if (watcher.settled) {
+          return;
+        }
+        watcher.settled = true;
+        clearTimeout(watcher.timer);
+        removeWatcher();
+        watcher.resolve(watcher.messages);
+      };
+
+      const watchersForChat = watchers.get(key) ?? new Set<MessageWatcher>();
+      watchersForChat.add(watcher);
+      watchers.set(key, watchersForChat);
+      return { result, cancel: finish };
     },
     async waitForIncoming(chatId, timeoutMs) {
       const key = normalizeChatKey(chatId);

@@ -17,6 +17,8 @@ telegram.session
 .env.*
 !.env.example
 credentials.json
+history.sqlite
+history.sqlite-*
 
 # OS / editor
 .DS_Store

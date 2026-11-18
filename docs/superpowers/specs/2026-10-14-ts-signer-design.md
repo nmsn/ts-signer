@@ -17,7 +17,7 @@
 | 能力范围 | 最小自用：登录、cron 签到、发文本、按文案点按钮、已签记录 |
 | 运行方式 | 常驻进程，进程内调度 |
 | 配置方式 | 交互向导生成 `config.json`，可手改 |
-| 账号 | 单账号 |
+| 账号 | 每个 `--profile` 使用独立 workdir、session、config 和状态 |
 | 代理 | 不内置，依赖系统/VPN |
 | Telegram 库 | MTCute（`@mtcute/node`） |
 | 架构风格 | 精简能力（方案 1）+ **pnpm monorepo** 分包 |
@@ -32,7 +32,7 @@
 - Dice、AI 识图、AI 算题
 - WebUI / Electron 桌面端（见 §10 后续计划）
 - monitor、automation 规则引擎
-- SQLite 与积分回读展示（见 §10；v1 仅用 `state.json`）
+- 积分回读与自动解析（签到回复观测和历史记录已由后续设计补充；积分解析仍不做）
 - 从 Python 版自动迁移
 - 自动探测「可签到」群组
 
@@ -54,7 +54,8 @@
 ```
 <workdir>/
 ├── config.json       # 任务与动作
-├── state.json        # 签到记录
+├── history.sqlite    # 执行历史、频道结果和短时间窗口内的回复
+├── state.json        # 旧版本迁移来源；首次迁移后由 SQLite 保存检查点
 ├── session/          # MTCute storage（账号会话，敏感）
 └── credentials.json  # 可选：apiId/apiHash（敏感，不进 git）
 ```
@@ -86,7 +87,7 @@ packages/electron      # 桌面壳（目录先建好，v1 不实现业务）
 CLI 命令面（`packages/cli`）：
 
 ```
-login | init | run | run-once
+login | logout | init | run | run-once | history | account add/list
 ```
 
 Core 运行时（`packages/core`）：
@@ -97,12 +98,12 @@ TelegramClient (@mtcute/node)
 SignerEngine
      ├── Scheduler（cron + random_seconds）
      ├── ActionRunner（send_text / click_keyboard_by_text）
-     └── SignRecordStore（v1: state.json；接口可换 SQLite）
+     └── SqliteSignRecordStore（执行历史 + 调度检查点）
 ```
 
 原则：
 
-- 单账号、单 `config.json`（不做多 task 目录）
+- 单 profile、单 `config.json`（多账号通过隔离 profile/workdir 选择；不做多 task 目录）
 - 配置是业务唯一真相；向导（CLI）只负责生成/改写
 - 业务逻辑不进 `cli` / `electron`，只进 `core`
 - 与官方 App 可同时在线（多 session）
@@ -150,17 +151,15 @@ SignerEngine
 
 执行顺序：按 `chats` → 按 `actions` 依次执行。每个 chat/action 的结果返回给 CLI；所有配置动作都成功后才写签到记录。动作失败或按钮等待超时会显示为失败，不把未完成的轮次记为已签到。
 
-### 4.3 `state.json`
+### 4.3 调度检查点与历史
 
-```json
-{
-  "last_signed_date": "2026-10-14",
-  "last_signed_at": "2026-10-14T06:03:12+08:00"
-}
-```
+- `history.sqlite` 保存签到轮次、每个频道的动作结果，以及发送签到后 10 秒内观察到的消息摘要和发送者类别。
+- 历史中的“动作成功”表示 Telegram 操作成功，不代表机器人确认签到成功；未设置回复匹配规则时确认状态为 `unverified`。
+- 每次执行的回复仅按目标群和短时间窗口收集；优先标记直接回复签到消息，其他窗口内消息标注为弱关联。
+- 初次打开数据库时，将旧 `state.json` 中的最后成功日期和时间导入 `sign_state`；文件保留为备份。
 
 - `run`：若今日已签且未到下一 cron，则跳过本轮。
-- `run-once`：强制再跑一轮并更新 state。
+- `run-once`：强制再跑一轮；动作全部成功时更新 SQLite 调度检查点。
 
 时区：优先环境变量 `TZ`，否则系统本地时区；文档建议自用设置 `TZ=Asia/Shanghai`。
 
@@ -218,7 +217,7 @@ ts-signer/
 │   │       ├── client.ts
 │   │       ├── signer.ts
 │   │       ├── scheduler.ts
-│   │       ├── store.ts         # Store 接口 + JsonSignRecordStore
+│   │       ├── store.ts         # SQLite history/checkpoint store + legacy JSON adapter
 │   │       └── paths.ts
 │   ├── cli/                     # @ts-signer/cli（bin: ts-signer）
 │   │   ├── package.json
@@ -297,32 +296,30 @@ ts-signer/
 - **必须**依赖 `@ts-signer/core`，不得复制签到逻辑
 - UI 技术栈（React/Vue 等）留给后续专项设计再定
 
-### 10.2 签到回复回读与积分展示
+### 10.2 签到回复解析与积分展示（有限回复观测已实现）
 
-- 签到动作执行后，监听/抓取目标群组或机器人的**回复消息**（典型内容：积分、连续签到天数等）
+- SQLite 历史已保存发送签到后 10 秒内观察到的消息文本、发送者类别与关联方式；当前不把回复自动判定为签到成功。
 - 从回复文本中解析积分数值（规则可为：正则 / 简单模板；是否上 AI 解析另议）
 - 将解析出的积分等字段展示在客户端界面
 
-依赖前提：v1 已具备「发消息 + 收消息」能力；后续需扩展配置（例如「积分消息匹配规则」）与展示模型。
+后续需扩展每群回复匹配配置（例如发送者、成功/失败关键词、积分提取规则）与展示模型。
 
-### 10.3 本地 SQLite 持久化与查看
+### 10.3 本地 SQLite 持久化与查看（签到历史已实现）
 
-- 用 SQLite 在客户端侧持久化：签到历史、解析出的积分、关联 chat、原始回复摘要等
-- 提供查看能力：按日期 / 按 chat 浏览历史与积分变化
-- 替代或升级 v1 的 `state.json`（仅「是否已签」不够支撑历史与积分曲线）
+- 用 SQLite 在 workdir/profile 侧持久化签到轮次、频道结果、有限时间窗口内的回复文本和发送者类别。
+- CLI 使用 `history [--limit N]` 查看最近签到结果。
+- 旧 `state.json` 的签到检查点首次启动时迁移到 SQLite；积分解析、按日期/频道统计仍待后续设计。
 
 ### 10.4 建议落地顺序（仅规划，不实施）
 
-1. v1：`core` + `cli` 稳定；`electron` 保持占位（本文件 §1–§9）
-2. `core`：回复捕获 + 积分解析 + 存储抽象扩展（可先仍落文件）
-3. `core`：SQLite schema 与查询 / 迁移（从 `state.json` 如有需要）
-4. `electron`：壳 + 展示运行状态、积分与历史
-5. 打磨 GUI 向导与打包分发
+1. `core`：解析特定签到机器人回复中的积分或成功/失败结果
+2. `electron`：壳 + 展示运行状态、积分与历史
+3. 打磨 GUI 向导与打包分发
 
 ### 10.5 对 v1 的约束（避免推倒重来）
 
 实现 v1 时注意：
 
 - **Monorepo 分包从第一天就建好**（含 `electron` 空包），禁止把业务写进 `cli` 导致日后无法复用
-- `SignRecordStore` 以接口形式存在于 `core`，v1 用 JSON 实现；日后可换 SQLite 而不改 ActionRunner
+- `SignRecordStore` 以接口形式存在于 `core`，当前由 SQLite 实现签到历史与去重检查点
 - 收消息路径（点按钮已在用）保持可扩展，便于挂「回复解析」钩子
